@@ -1,449 +1,980 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-/* ------------------------------------------------------------------
-   CONTENT - edit these arrays to change menu / news without touching JSX
-------------------------------------------------------------------- */
+/* ===================================================================
+   CONTENT – edit these arrays to change menu / news / FAQ
+   without touching the JSX.
+=================================================================== */
+
+// Put your real emblem here (e.g. '/img/emblem_of_india_colorful.png').
+// If empty, the built-in placeholder seal is used.
+const EMBLEM_SRC = '/img/emblem_of_india_colorful.png';
+
 const NAV_ITEMS = [
-    { label: 'Home', href: '/' },
-
-    // TODO: enable when the About Us pages are ready
-    // {
-    //     label: 'About Us',
-    //     children: [
-    //         { label: 'About the Commission', href: '/about' },
-    //         { label: 'Vision & Mission', href: '/vision' },
-    //     ],
-    // },
-
-    { label: 'Instructions', href: '/instructions' },
-
+    { label: 'Home', view: 'home', icon: 'i-home' },
+    { label: 'Instructions', view: 'instructions', icon: 'i-book' },
     {
         label: 'Apply Online',
+        icon: 'i-edit',
         children: [
-			{ label: 'Register via DigiLocker', href: '/register' },
-			{ label: "Candidate's Login", href: '/login' },
+            { label: 'Register via DigiLocker', hint: 'First-time applicants', href: '/slrc/register', icon: 'i-user-plus' },
+            { label: "Candidate's Login", hint: 'Continue or view your application', href: '/slrc/Login', icon: 'i-login' },
         ],
     },
-
-    { label: 'FAQ', href: '/faq' },
-    { label: 'Contact Us', href: '/contact' },
-];
-const NEWS_ITEMS = [
-    'Online applications are open for Class III posts under Government of Assam',
-    'Candidates must read the advertisement and eligibility criteria before applying',
-    'Keep a scanned photograph, signature and valid ID ready before starting the form',
-    'Beware of fraudulent websites and agents: apply only through this official portal',
+    { label: 'FAQ', view: 'faq', icon: 'i-help' },
+    { label: 'Contact Us', view: 'contact', icon: 'i-phone' },
 ];
 
-/* ------------------------------------------------------------------ */
+const NEWS = [
+    { text: 'Online applications are open for Class III posts under Government of Assam', type: 'Notice', date: '2026-11-18', isNew: true },
+    { text: 'Candidates must read the advertisement and eligibility criteria before applying', type: 'Notice', date: '2026-11-15' },
+    { text: 'Keep a scanned photograph, signature and valid ID ready before starting the form', type: 'Update', date: '2026-11-12' },
+    { text: 'Beware of fraudulent websites and agents: apply only through this official portal', type: 'Update', date: '2026-11-10' },
+];
 
-function Header() {
-    const [openMenu, setOpenMenu] = useState(null);
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [newsIndex, setNewsIndex] = useState(0);
-    const [paused, setPaused] = useState(false);
-    const [fontScale, setFontScale] = useState(100);
+const FAQS = [
+    { q: 'How do I apply for Class III posts?', a: 'Applications are accepted online only through this portal. Use the Apply Online menu to begin. (Replace with official text.)' },
+    { q: 'Can I apply offline?', a: 'No. Applications are accepted online only. (Replace with official text.)' },
+    { q: 'Where can I find the instructions?', a: 'Open the Instructions page from the main navigation. (Replace with official text.)' },
+    { q: 'Whom do I contact for help?', a: 'See the Contact Us page for helpdesk details. (Replace with official text.)' },
+];
 
-    useEffect(() => {
-        if (paused) return undefined;
-        const t = setInterval(() => setNewsIndex((i) => (i + 1) % NEWS_ITEMS.length), 4500);
-        return () => clearInterval(t);
-    }, [paused]);
+const VIEWS = ['home', 'instructions', 'faq', 'contact'];
+const VIEW_TITLES = { home: 'Home', instructions: 'Instructions', faq: 'FAQ', contact: 'Contact Us' };
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const TICKER_MS = 6000;
 
-    useEffect(() => {
-        document.documentElement.style.fontSize = `${fontScale}%`;
-    }, [fontScale]);
+/* ===================================================================
+   STYLES
+   Everything is scoped under .seba-app so it will not leak into the
+   rest of your site.
+=================================================================== */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@500;600;700&display=swap');
 
-    const prevNews = () => setNewsIndex((i) => (i - 1 + NEWS_ITEMS.length) % NEWS_ITEMS.length);
-    const nextNews = () => setNewsIndex((i) => (i + 1) % NEWS_ITEMS.length);
-    const changeFont = (delta) => setFontScale((s) => Math.min(120, Math.max(90, s + delta)));
+.seba-app{
+  --navy-900:#0c2340; --navy-800:#13315c; --navy-700:#1d4378; --navy-50:#eef3fa;
+  --saffron-500:#f59e0b; --saffron-600:#d97706; --saffron-50:#fff7e8;
+  --green-600:#15803d; --green-50:#ecfdf3; --red-600:#b42318; --red-50:#fef3f2;
+  --bg:#f5f7fa; --surface:#ffffff; --surface-2:#f9fafb; --border:#e3e8ef; --border-strong:#cdd5df;
+  --text:#101828; --text-2:#475467; --text-3:#667085;
+  --radius-sm:6px; --radius:10px; --radius-lg:14px;
+  --shadow-sm:0 1px 2px rgba(16,24,40,.06);
+  --shadow:0 4px 12px -2px rgba(16,24,40,.08), 0 2px 4px -2px rgba(16,24,40,.04);
+  --shadow-lg:0 12px 32px -8px rgba(16,24,40,.18);
+  --font:"Inter","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-as:"Noto Sans Bengali","Nirmala UI","Vrinda","Shonar Bangla",sans-serif;
+  --container:1200px; --nav-h:56px;
 
+  margin:0;font-family:var(--font);font-size:15px;line-height:1.55;color:var(--text);background:var(--bg);
+  min-height:100vh;display:flex;flex-direction:column;
+}
+.seba-app *,.seba-app *::before,.seba-app *::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+.seba-app img,.seba-app svg{display:block}
+.seba-app a{color:var(--navy-700)}
+.seba-app button{font:inherit;cursor:pointer}
+.seba-app .as{font-family:var(--font-as)}
+.seba-app .container{width:100%;max-width:var(--container);margin:0 auto;padding:0 20px}
+.seba-app .visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.seba-app :focus-visible{outline:3px solid var(--saffron-500);outline-offset:2px;border-radius:4px}
+
+.seba-app .skip-link{position:absolute;left:12px;top:-60px;z-index:100;background:var(--navy-800);color:#fff;
+  padding:10px 16px;border-radius:var(--radius-sm);text-decoration:none;font-weight:600;transition:top .15s}
+.seba-app .skip-link:focus{top:12px}
+
+/* Government strip */
+.seba-app .gov-strip{background:var(--navy-900);color:#dbe4f0;font-size:12px}
+.seba-app .gov-strip .container{display:flex;align-items:center;justify-content:space-between;min-height:38px;gap:16px}
+.seba-app .gov-strip__ids{display:flex;align-items:center}
+.seba-app .gov-strip__id{display:flex;flex-direction:column;line-height:1.2;padding:4px 16px 4px 0}
+.seba-app .gov-strip__id + .gov-strip__id{padding-left:16px;border-left:1px solid rgba(255,255,255,.18)}
+.seba-app .gov-strip__id .as{font-size:13px;font-weight:600;color:#fff}
+.seba-app .gov-strip__id span:last-child{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.seba-app .gov-strip__tools{display:flex;align-items:center;gap:6px}
+.seba-app .gov-strip__tools button{background:transparent;border:1px solid rgba(255,255,255,.22);color:#e7edf5;
+  border-radius:5px;font-size:12px;padding:3px 8px;min-width:30px}
+.seba-app .gov-strip__tools button:hover{background:rgba(255,255,255,.1)}
+.seba-app .gov-strip__tools button[aria-pressed="true"]{background:#fff;color:var(--navy-900)}
+
+/* Masthead */
+.seba-app .masthead{background:var(--surface);position:relative}
+.seba-app .masthead .container{display:grid;grid-template-columns:minmax(200px,1fr) auto minmax(200px,1fr);
+  align-items:center;gap:24px;padding-top:20px;padding-bottom:20px}
+.seba-app .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}
+.seba-app .brand__emblem{width:52px;height:52px;flex-shrink:0;object-fit:contain}
+.seba-app .brand__text{line-height:1.25}
+.seba-app .brand__text strong{display:block;font-size:15px;color:var(--navy-900)}
+.seba-app .brand__text span{display:block;font-size:12.5px;color:var(--text-2)}
+.seba-app .title-block{text-align:center;max-width:680px}
+.seba-app .title-block__as{font-size:17px;font-weight:600;color:var(--navy-800);margin:0 0 2px}
+.seba-app .title-block h1{margin:0;font-size:clamp(18px,2.2vw,25px);font-weight:800;letter-spacing:.01em;
+  color:var(--navy-900);line-height:1.2;text-transform:uppercase}
+.seba-app .title-block p{margin:6px 0 0;font-size:13.5px;color:var(--text-2)}
+.seba-app .portal-badge{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.seba-app .portal-badge__title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--navy-900)}
+.seba-app .portal-badge__chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  color:var(--green-600);background:var(--green-50);border:1px solid #b7e4c7;border-radius:999px;padding:3px 10px}
+.seba-app .portal-badge__chip svg{width:14px;height:14px}
+.seba-app .tricolour{display:flex;height:4px}
+.seba-app .tricolour span{flex:1}
+.seba-app .tricolour span:nth-child(1){background:var(--saffron-500)}
+.seba-app .tricolour span:nth-child(2){background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.seba-app .tricolour span:nth-child(3){background:var(--green-600)}
+
+/* Navigation */
+.seba-app .site-nav{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm)}
+.seba-app .site-nav .container{display:flex;align-items:center;min-height:var(--nav-h);gap:8px}
+.seba-app .nav-toggle{display:none;align-items:center;gap:8px;background:transparent;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:8px 12px;color:var(--navy-900);font-weight:600}
+.seba-app .nav-toggle svg{width:20px;height:20px}
+.seba-app .nav-list{list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:4px}
+.seba-app .nav-item{position:relative}
+.seba-app .nav-link{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:var(--radius-sm);
+  color:var(--text);text-decoration:none;font-weight:600;font-size:14.5px;background:transparent;border:0;transition:background .15s,color .15s}
+.seba-app .nav-link svg{width:16px;height:16px;flex-shrink:0}
+.seba-app .nav-link:hover{background:var(--navy-50);color:var(--navy-800)}
+.seba-app .nav-link[aria-current="page"]{background:var(--saffron-50);color:var(--saffron-600);box-shadow:inset 0 -3px 0 var(--saffron-500)}
+.seba-app .nav-link .chev{width:14px;height:14px;transition:transform .2s}
+.seba-app .nav-link[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.seba-app .dropdown{position:absolute;top:calc(100% + 6px);left:0;min-width:270px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:6px;
+  list-style:none;margin:0;opacity:0;visibility:hidden;transform:translateY(-4px);transition:.15s ease;z-index:60}
+.seba-app .dropdown.is-open{opacity:1;visibility:visible;transform:none}
+.seba-app .dropdown a{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:var(--radius-sm);text-decoration:none;color:var(--text)}
+.seba-app .dropdown a:hover,.seba-app .dropdown a:focus-visible{background:var(--navy-50);outline-offset:-2px}
+.seba-app .dropdown a svg{width:20px;height:20px;color:var(--navy-700);margin-top:2px;flex-shrink:0}
+.seba-app .dropdown strong{display:block;font-size:14px}
+.seba-app .dropdown small{display:block;color:var(--text-3);font-size:12.5px}
+
+/* Buttons */
+.seba-app .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 18px;
+  border-radius:var(--radius-sm);font-weight:600;font-size:14.5px;text-decoration:none;border:1px solid transparent;
+  transition:background .15s,border-color .15s,box-shadow .15s;white-space:nowrap}
+.seba-app .btn svg{width:18px;height:18px}
+.seba-app .btn--accent{background:var(--saffron-500);color:#1a1200}
+.seba-app .btn--accent:hover{background:#fbb336}
+.seba-app .btn--secondary{background:var(--surface);color:var(--navy-800);border-color:var(--border-strong)}
+.seba-app .btn--secondary:hover{background:var(--surface-2);border-color:var(--navy-700)}
+.seba-app .btn--sm{height:36px;padding:0 14px;font-size:13.5px}
+
+/* News ticker */
+.seba-app .news{background:var(--navy-800);color:#fff;position:relative}
+.seba-app .news .container{display:flex;align-items:stretch;min-height:48px;padding:0}
+.seba-app .news__label{display:flex;align-items:center;gap:10px;padding:0 20px;font-weight:700;font-size:13.5px;
+  letter-spacing:.06em;text-transform:uppercase;background:var(--navy-900);white-space:nowrap}
+.seba-app .news__dot{width:8px;height:8px;border-radius:50%;background:#f97066;animation:seba-pulse 2s infinite}
+@keyframes seba-pulse{0%{box-shadow:0 0 0 0 rgba(249,112,102,.6)}70%{box-shadow:0 0 0 8px rgba(249,112,102,0)}100%{box-shadow:0 0 0 0 rgba(249,112,102,0)}}
+.seba-app .news__viewport{flex:1;display:flex;align-items:center;padding:0 20px;min-width:0;overflow:hidden}
+.seba-app .news__item{margin:0;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:seba-news-in .3s ease both}
+@keyframes seba-news-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.seba-app .news__item a{color:#fff;text-decoration:none}
+.seba-app .news__item a:hover{text-decoration:underline}
+.seba-app .news__tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--saffron-500);
+  color:#1a1200;border-radius:4px;padding:1px 6px;margin-right:10px;vertical-align:1px}
+.seba-app .news__controls{display:flex;align-items:center;gap:2px;padding:0 12px;border-left:1px solid rgba(255,255,255,.12)}
+.seba-app .news__count{font-size:12px;color:#c3d1e4;margin-right:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.seba-app .icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:var(--radius-sm);background:transparent;border:0;color:#fff}
+.seba-app .icon-btn:hover{background:rgba(255,255,255,.12)}
+.seba-app .icon-btn svg{width:18px;height:18px}
+.seba-app .news__progress{position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--saffron-500)}
+
+
+/* Back to top */
+.seba-app .to-top{position:fixed;left:20px;bottom:20px;width:44px;height:44px;border-radius:50%;border:1px solid var(--border);
+  background:var(--surface);color:var(--navy-800);box-shadow:var(--shadow);display:grid;place-items:center;
+  opacity:0;visibility:hidden;transition:.2s;z-index:40}
+.seba-app .to-top.is-visible{opacity:1;visibility:visible}
+.seba-app .to-top svg{width:20px;height:20px}
+
+/* Larger-text mode */
+html.seba-text-lg .seba-app{font-size:17px}
+/* in .seba-app { ... } remove: margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; */
+/* and use: */
+.seba-app{ /* keep all the --variables */ display:contents; font-family:var(--font);font-size:15px;line-height:1.55;color:var(--text); }
+
+/* change main to: */
+.seba-app main{background:var(--bg);padding:32px 0 56px}
+/* Responsive */
+@media (max-width:1024px){
+  .seba-app .quick-grid{grid-template-columns:repeat(2,1fr)}
+  .seba-app .home-grid{grid-template-columns:1fr}
+  .seba-app .masthead .container{grid-template-columns:auto 1fr}
+  .seba-app .portal-badge{grid-column:1 / -1;flex-direction:row;justify-content:center;justify-self:center;align-items:center;gap:12px}
+  .seba-app .brand__text{display:none}
+  .seba-app .title-block{text-align:left}
+}
+@media (max-width:860px){
+  .seba-app .nav-toggle{display:inline-flex}
+  .seba-app .nav-list{display:none;position:absolute;left:0;right:0;top:100%;flex-direction:column;align-items:stretch;
+    background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow-lg);padding:8px 16px 16px;gap:2px}
+  .seba-app .nav-list.is-open{display:flex}
+  .seba-app .nav-link{width:100%;height:46px;justify-content:flex-start}
+  .seba-app .nav-link .chev{margin-left:auto}
+  .seba-app .dropdown{position:static;box-shadow:none;border:0;border-left:2px solid var(--border);border-radius:0;
+    margin:2px 0 6px 18px;display:none;opacity:1;visibility:visible;transform:none;min-width:0}
+  .seba-app .dropdown.is-open{display:block}
+  .seba-app .hero{grid-template-columns:1fr}
+  .seba-app .site-footer .container{grid-template-columns:1fr 1fr}
+  .seba-app .site-footer .footer-about{grid-column:1 / -1}
+}
+@media (max-width:640px){
+  .seba-app .container{padding:0 16px}
+  .seba-app .gov-strip__tools{display:none}
+  .seba-app .masthead .container{grid-template-columns:1fr;justify-items:center;gap:12px;padding-top:16px;padding-bottom:16px}
+  .seba-app .masthead .brand{display:none}
+  .seba-app .title-block{text-align:center}
+  .seba-app .title-block__as{font-size:15px}
+  .seba-app .portal-badge{flex-direction:column;gap:6px}
+  .seba-app .news__label{padding:0 12px}
+  .seba-app .news__label-text{display:none}
+  .seba-app .news__viewport{padding:0 12px}
+  .seba-app .news__count{display:none}
+  .seba-app .news__controls{padding:0 4px}
+  .seba-app .news__item{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13.5px;line-height:1.4;margin:7px 0;overflow:hidden}
+  .seba-app .news__tag{display:none}
+  .seba-app .hero__main,.seba-app .hero__aside{padding:22px}
+  .seba-app .quick-grid{grid-template-columns:1fr}
+  .seba-app .page-head h2{font-size:22px}
+  .seba-app .toolbar .select{flex:1}
+  .seba-app .site-footer .container{grid-template-columns:1fr}
+  .seba-app .btn{flex:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .seba-app *,.seba-app *::before,.seba-app *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+`;
+
+/* ===================================================================
+   ICONS
+=================================================================== */
+function IconSprite() {
+    const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+    const s24 = { viewBox: '0 0 24 24', ...s };
     return (
-        <>
-            <style>{`
-                :root {
-                    --h-navy: #0f2f5c;
-                    --h-navy-deep: #0a2244;
-                    --h-ink: #111111;
-                    --h-grey: #f4f1ec;
-                    --h-line: #dcd7cf;
-                    --h-accent: #f5a30f;
-                    --h-saffron: #ff9933;
-                    --h-green: #138808;
-                }
-
-                .site-header, .site-header * { box-sizing: border-box; }
-                .site-header { font-family: 'Segoe UI', 'Noto Sans', Arial, sans-serif; position: relative; z-index: 50; }
-
-                .skip-link {
-                    position: absolute; left: -9999px; top: 0;
-                    background: var(--h-accent); color: #000; padding: 6px 12px; font-weight: 600; z-index: 100;
-                }
-                .skip-link:focus { left: 8px; top: 8px; }
-
-                /* ---------- 1. Top government strip ---------- */
-                .gov-strip {
-                    background: var(--h-grey);
-                    border-bottom: 1px solid var(--h-line);
-                    display: flex; align-items: stretch; justify-content: space-between;
-                    animation: dropIn .5s ease both;
-                }
-                .gov-strip__left { display: flex; align-items: stretch; padding-left: 3%; }
-                .gov-strip__block { padding: 3px 12px 3px 0; line-height: 1.15; font-size: 10.5px; color: #222; }
-                .gov-strip__block + .gov-strip__block { padding-left: 12px; border-left: 1px solid #b9b3a8; }
-                .gov-strip__block b { display: block; font-size: 11.5px; font-weight: 600; }
-                .gov-strip__block span { font-weight: 600; text-transform: uppercase; letter-spacing: .2px; }
-
-                .gov-strip__tools { display: flex; align-items: stretch; }
-                .tool-btn {
-                    background: none; border: none; border-left: 1px solid var(--h-line);
-                    padding: 0 11px; cursor: pointer; color: #111; font-weight: 700; font-size: 11.5px;
-                    min-width: 32px; transition: background .2s, transform .15s;
-                }
-                .tool-btn:hover { background: #e8e3da; }
-                .tool-btn:active { transform: scale(.92); }
-                .tool-btn:focus-visible { outline: 2px solid var(--h-navy); outline-offset: -2px; }
-
-                /* ---------- 2. Logo + title row ---------- */
-                .brand-row {
-                    position: relative;
-                    background: linear-gradient(180deg, #ffffff, #f8fafd);
-                    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-                    gap: 12px; padding: 18px 3%;
-                    border-bottom: 1px solid var(--h-line);
-                }
-                /* tricolour line that draws in under the brand row */
-                .brand-row::after {
-                    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
-                    background: linear-gradient(to right, var(--h-saffron) 33.33%, #fff 33.33% 66.66%, var(--h-green) 66.66%);
-                    transform-origin: left; animation: draw 1s cubic-bezier(.22,.8,.3,1) .3s both;
-                }
-
-                .brand-left { display: flex; align-items: center; gap: 9px; }
-                .brand-emblem {
-                    height: 44px; width: auto; object-fit: contain;
-                    mix-blend-mode: multiply;
-                    animation: popIn .7s cubic-bezier(.22,.8,.3,1) both, floaty 5s ease-in-out 1s infinite;
-                }
-                .brand-left__text { line-height: 1.2; animation: slideIn .7s ease .15s both; }
-                .brand-left__text strong { display: block; font-size: 12.5px; color: var(--h-ink); }
-                .brand-left__text span { display: block; font-size: 11.5px; color: #333; }
-
-                .brand-center { text-align: center; animation: slideIn .8s ease .1s both; }
-                .brand-center__local { font-size: 14px; font-weight: 500; color: var(--h-ink); margin: 0; line-height: 1.25; }
-                .brand-center__title {
-                    margin: 0; font-size: 20px; font-weight: 800; color: var(--h-ink);
-                    line-height: 1.15; text-transform: uppercase;
-                    animation: trackIn 1s ease .2s both;
-                }
-                .brand-center__sub { margin: 2px 0 0; font-size: 11.5px; font-weight: 600; color: var(--h-navy); }
-
-                .brand-right { display: flex; justify-content: flex-end; align-items: center; gap: 9px; animation: slideIn .7s ease .25s both; }
-                .brand-right__text { text-align: right; line-height: 1.2; }
-                .brand-right__text strong { display: block; font-size: 12.5px; color: var(--h-ink); }
-                .brand-right__text span { font-size: 11.5px; color: #333; }
-                .brand-right__tricolour {
-                    width: 5px; height: 34px; border-radius: 3px;
-                    background: linear-gradient(180deg, var(--h-saffron) 33%, #fff 33% 66%, var(--h-green) 66%);
-                    border: 1px solid var(--h-line);
-                    animation: pulseBar 3s ease-in-out infinite;
-                }
-
-                /* ---------- 3. Navigation bar ---------- */
-				.nav-bar {
-				    background: var(--h-grey);
-				    border-bottom: 1px solid var(--h-line);
-				    padding: 0 3%;
-				    position: relative;
-				    z-index: 70;            /* add this line */
-				}
-                .nav-toggle {
-                    display: none; width: 100%; background: none; border: none; padding: 9px 0;
-                    font-size: 13.5px; font-weight: 700; text-align: left; cursor: pointer; color: var(--h-ink);
-                }
-                .nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; }
-                .nav-item { position: relative; animation: dropIn .5s ease both; }
-                .nav-item:nth-child(1) { animation-delay: .10s; }
-                .nav-item:nth-child(2) { animation-delay: .16s; }
-                .nav-item:nth-child(3) { animation-delay: .22s; }
-                .nav-item:nth-child(4) { animation-delay: .28s; }
-                .nav-item:nth-child(5) { animation-delay: .34s; }
-                .nav-item:nth-child(6) { animation-delay: .40s; }
-                .nav-item:nth-child(7) { animation-delay: .46s; }
-
-                .nav-link {
-                    display: flex; align-items: center; gap: 5px;
-                    padding: 9px 15px; background: none; border: none; cursor: pointer;
-                    font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--h-ink);
-                    text-decoration: none; position: relative; transition: background .2s;
-                }
-                .nav-link::after {
-                    content: ""; position: absolute; left: 15px; right: 15px; bottom: 5px; height: 2px;
-                    background: var(--h-navy); transform: scaleX(0); transform-origin: left; transition: transform .25s ease;
-                }
-                .nav-link:hover::after, .nav-item--open > .nav-link::after { transform: scaleX(1); }
-                .nav-link:focus-visible { outline: 2px solid var(--h-navy); outline-offset: -2px; }
-                .nav-link--active {
-                    background: linear-gradient(110deg, var(--h-accent) 40%, #ffd36a 50%, var(--h-accent) 60%);
-                    background-size: 250% 100%;
-                    animation: shine 4s ease-in-out 1s infinite;
-                }
-                .nav-link--active::after { display: none; }
-                .caret { width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
-                .nav-item--open .caret { transform: rotate(-135deg) translateY(-2px); }
-
-                .dropdown {
-                    list-style: none; margin: 0; padding: 4px 0;
-                    position: absolute; top: 100%; left: 0; min-width: 215px;
-                    background: #fff; border: 1px solid var(--h-line); border-top: 3px solid var(--h-navy);
-                    box-shadow: 0 12px 24px -10px rgba(0,0,0,.3);
-                    opacity: 0; visibility: hidden; transform: translateY(8px);
-                    transition: opacity .2s, transform .2s, visibility .2s;
-                    z-index: 60;
-                }
-                .nav-item--open > .dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
-                .dropdown a {
-                    display: block; padding: 7px 15px; font-size: 13px; color: #1b1b1b; text-decoration: none;
-                    border-left: 3px solid transparent; transition: background .15s, border-color .15s, padding .15s;
-                }
-                .dropdown a:hover, .dropdown a:focus-visible { background: #eef3fa; border-left-color: var(--h-navy); padding-left: 19px; outline: none; }
-
-                /* ---------- 4. Latest news bar ---------- */
-                .news-bar {
-                    position: relative; overflow: hidden;
-                    background: var(--h-navy); color: #fff;
-                    display: flex; align-items: stretch; min-height: 36px;
-                }
-                .news-bar::after {                      /* slow light sweep */
-                    content: ""; position: absolute; inset: 0; pointer-events: none;
-                    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.12) 50%, transparent 60%);
-                    transform: translateX(-100%); animation: sweep 6s ease-in-out 1.2s infinite;
-                }
-                .news-bar__label {
-                    flex: 0 0 auto; padding: 0 3%; display: flex; align-items: center;
-                    font-size: 14.5px; font-weight: 700; letter-spacing: .3px;
-                    border-right: 1px solid rgba(255,255,255,.35);
-                }
-                .news-bar__label i {
-                    width: 7px; height: 7px; border-radius: 50%; background: #ff5a4d; margin-right: 9px;
-                    animation: livePulse 1.6s ease-in-out infinite;
-                }
-                .news-bar__text { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4px 16px; overflow: hidden; }
-                .news-bar__text a {
-                    color: #fff; text-decoration: none; font-weight: 600; font-size: 13px; text-align: center;
-                    animation: newsIn .5s ease both;
-                }
-                .news-bar__text a:hover { text-decoration: underline; }
-                .news-bar__controls { display: flex; align-items: center; gap: 2px; padding-right: 3%; position: relative; z-index: 1; }
-                .news-btn {
-                    width: 26px; height: 26px; display: grid; place-items: center;
-                    background: none; border: none; color: #fff; cursor: pointer; border-radius: 4px;
-                    transition: background .2s, transform .15s;
-                }
-                .news-btn:hover { background: rgba(255,255,255,.18); }
-                .news-btn:active { transform: scale(.88); }
-                .news-btn:focus-visible { outline: 2px solid #fff; }
-                .news-btn svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-                .news-btn svg .solid { fill: currentColor; stroke: none; }
-
-                .news-progress { height: 2px; background: var(--h-navy-deep); overflow: hidden; }
-                .news-progress span {
-                    display: block; height: 100%; width: 100%; background: var(--h-accent);
-                    transform-origin: left; animation: progress 4.5s linear both;
-                }
-                .news-progress--paused span { animation-play-state: paused; }
-
-                /* ---------- Keyframes ---------- */
-                @keyframes popIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
-                @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-                @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-                @keyframes dropIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-                @keyframes trackIn { from { opacity: 0; letter-spacing: 3px; } to { opacity: 1; letter-spacing: .3px; } }
-                @keyframes draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-                @keyframes pulseBar { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.8); } }
-                @keyframes shine { 0%,100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
-                @keyframes sweep { 0% { transform: translateX(-100%); } 35%,100% { transform: translateX(100%); } }
-                @keyframes newsIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-                @keyframes livePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
-                @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-                /* ---------- Responsive ---------- */
-                @media (max-width: 1000px) {
-                    .brand-row { grid-template-columns: 1fr; text-align: center; justify-items: center; gap: 4px; }
-                    .brand-right { display: none; }
-                    .brand-center__title { font-size: 18px; }
-                    .brand-center__local { font-size: 13px; }
-                }
-
-                @media (max-width: 760px) {
-                    .gov-strip__left { padding-left: 10px; }
-                    .gov-strip__block { font-size: 9.5px; padding-right: 8px; }
-                    .gov-strip__block b { font-size: 10.5px; }
-                    .gov-strip__block + .gov-strip__block { padding-left: 8px; }
-                    .brand-left { display: none; }
-                    .brand-row { padding: 6px 10px; }
-                    .brand-center__title { font-size: 15px; }
-                    .brand-center__local { font-size: 12px; }
-                    .brand-center__sub { font-size: 10.5px; }
-
-                    .nav-toggle { display: block; }
-                    .nav-list { display: none; flex-direction: column; padding-bottom: 6px; }
-                    .nav-list--open { display: flex; }
-                    .nav-link { width: 100%; justify-content: space-between; padding: 9px 6px; }
-                    .nav-link::after { display: none; }
-                    .dropdown {
-                        position: static; box-shadow: none; border: none; border-left: 3px solid var(--h-navy);
-                        margin-left: 6px; display: none; opacity: 1; visibility: visible; transform: none;
-                    }
-                    .nav-item--open > .dropdown { display: block; }
-
-                    .news-bar { flex-wrap: wrap; }
-                    .news-bar__label { font-size: 13px; padding: 0 10px; min-height: 32px; border-right: none; }
-                    .news-bar__text { order: 3; flex-basis: 100%; padding: 0 10px 6px; }
-                    .news-bar__text a { font-size: 12px; }
-                    .news-bar__controls { margin-left: auto; padding-right: 6px; }
-                }
-
-                @media (prefers-reduced-motion: reduce) {
-                    .site-header *, .site-header *::after { animation: none !important; transition: none !important; }
-                }
-            `}</style>
-
-            <div className="site-header" id="home">
-                <a className="skip-link" href="#main-content">Skip to main content</a>
-
-                {/* 1. Top government strip */}
-                <div className="gov-strip">
-                    <div className="gov-strip__left">
-                        <div className="gov-strip__block">
-                            <b>অসম চৰকাৰ</b>
-                            <span>Government of Assam</span>
-                        </div>
-                        <div className="gov-strip__block">
-                            <b>নিযুক্তি আয়োগ</b>
-                            <span>Recruitment Commission</span>
-                        </div>
-                    </div>
-                    
-                </div>
-
-                {/* 2. Logo + title row */}
-                <div className="brand-row">
-                    <div className="brand-left">
-                        <img
-                            className="brand-emblem"
-                            src="/img/emblem_of_india_colorful.png"
-                            alt="National Emblem of India"
-                        />
-                        <div className="brand-left__text">
-                            <strong>Government of Assam</strong>
-                            <span>Recruitment Commission</span>
-                            <span>Class III Posts</span>
-                        </div>
-                    </div>
-
-                    <div className="brand-center">
-                        <p className="brand-center__local">ৰাজ্যিক স্তৰৰ নিযুক্তি আয়োগ</p>
-                        <h1 className="brand-center__title">
-                            State Level Recruitment Commission for Class III Posts
-                        </h1>
-                        <p className="brand-center__sub">Online Application Form for Recruitment of Class III Posts under Government of Assam</p>
-                    </div>
-
-                    <div className="brand-right">
-                        <div className="brand-right__text">
-                            <strong>Official Recruitment Portal</strong>
-                            <span>Apply online only</span>
-                        </div>
-                        <div className="brand-right__tricolour" aria-hidden="true" />
-                    </div>
-                </div>
-
-                {/* 3. Navigation */}
-                <nav className="nav-bar" aria-label="Main navigation">
-                    <button
-                        className="nav-toggle"
-                        onClick={() => setMobileOpen((o) => !o)}
-                        aria-expanded={mobileOpen}
-                    >
-                        {mobileOpen ? '✕  Close menu' : '☰  Menu'}
-                    </button>
-
-                    <ul className={`nav-list ${mobileOpen ? 'nav-list--open' : ''}`}>
-                        {NAV_ITEMS.map((item, idx) => {
-                            const hasChildren = Boolean(item.children);
-                            const isOpen = openMenu === idx;
-                            return (
-                                <li
-                                    key={item.label}
-                                    className={`nav-item ${isOpen ? 'nav-item--open' : ''}`}
-                                    onMouseEnter={() => hasChildren && setOpenMenu(idx)}
-                                    onMouseLeave={() => hasChildren && setOpenMenu(null)}
-                                >
-                                    {hasChildren ? (
-                                        <button
-                                            className="nav-link"
-                                            aria-haspopup="true"
-                                            aria-expanded={isOpen}
-                                            onClick={() => setOpenMenu(isOpen ? null : idx)}
-                                        >
-                                            {item.label}
-                                            <span className="caret" />
-                                        </button>
-                                    ) : (
-                                        <a
-                                            className={`nav-link ${idx === 0 ? 'nav-link--active' : ''}`}
-                                            href={item.href}
-                                        >
-                                            {item.label}
-                                        </a>
-                                    )}
-
-                                    {hasChildren && (
-                                        <ul className="dropdown">
-                                            {item.children.map((c) => (
-                                                <li key={c.label}>
-                                                    <a href={c.href}>{c.label}</a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
-
-                {/* 4. Latest news bar */}
-                <div className="news-bar" role="region" aria-label="Latest news">
-                    <div className="news-bar__label"><i aria-hidden="true" />LATEST NEWS</div>
-
-                    <div className="news-bar__text" aria-live="polite">
-                        <a key={newsIndex} href="#notices">{NEWS_ITEMS[newsIndex]}</a>
-                    </div>
-
-                    <div className="news-bar__controls">
-                        <button className="news-btn" onClick={prevNews} aria-label="Previous news">
-                            <svg viewBox="0 0 24 24"><polyline points="15 4 7 12 15 20" /></svg>
-                        </button>
-                        <button className="news-btn" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Play news' : 'Pause news'}>
-                            <svg viewBox="0 0 24 24">
-                                {paused
-                                    ? <polygon className="solid" points="6 3 20 12 6 21" />
-                                    : <><rect className="solid" x="5" y="3" width="5" height="18" /><rect className="solid" x="14" y="3" width="5" height="18" /></>}
-                            </svg>
-                        </button>
-                        <button className="news-btn" onClick={nextNews} aria-label="Next news">
-                            <svg viewBox="0 0 24 24"><polyline points="9 4 17 12 9 20" /></svg>
-                        </button>
-                    </div>
-                </div>
-                <div className={`news-progress ${paused ? 'news-progress--paused' : ''}`}>
-                    <span key={`${newsIndex}-${paused}`} />
-                </div>
-            </div>
-        </>
+        <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+            <defs>
+                <symbol id="i-home" {...s24}><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></symbol>
+                <symbol id="i-book" {...s24}><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6.5A2.5 2.5 0 0 0 4 21.5 2.5 2.5 0 0 0 6.5 24" /><path d="M8 7h8M8 11h6" /></symbol>
+                <symbol id="i-edit" {...s24}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z" /></symbol>
+                <symbol id="i-help" {...s24}><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></symbol>
+                <symbol id="i-phone" {...s24}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></symbol>
+                <symbol id="i-chev-down" {...s24} strokeWidth="2.4"><path d="m6 9 6 6 6-6" /></symbol>
+                <symbol id="i-chev-left" {...s24} strokeWidth="2.4"><path d="m15 18-6-6 6-6" /></symbol>
+                <symbol id="i-chev-right" {...s24} strokeWidth="2.4"><path d="m9 18 6-6-6-6" /></symbol>
+                <symbol id="i-arrow" {...s24} strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6" /></symbol>
+                <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></symbol>
+                <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z" /></symbol>
+                <symbol id="i-menu" {...s24}><path d="M4 6h16M4 12h16M4 18h16" /></symbol>
+                <symbol id="i-close" {...s24}><path d="M18 6 6 18M6 6l12 12" /></symbol>
+                <symbol id="i-search" {...s24}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></symbol>
+                <symbol id="i-info" {...s24}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></symbol>
+                <symbol id="i-warn" {...s24}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></symbol>
+                <symbol id="i-bell" {...s24}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></symbol>
+                <symbol id="i-user-plus" {...s24}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></symbol>
+                <symbol id="i-login" {...s24}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5M15 12H3" /></symbol>
+                <symbol id="i-shield" {...s24}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></symbol>
+                <symbol id="i-up" {...s24} strokeWidth="2.4"><path d="m18 15-6-6-6 6" /></symbol>
+                <symbol id="i-emblem" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="30" fill="#fff7e8" stroke="#d97706" strokeWidth="2" />
+                    <circle cx="32" cy="32" r="23" fill="none" stroke="#13315c" strokeWidth="1.5" strokeDasharray="2 2.5" />
+                    <path d="M32 14l4 9 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="#13315c" />
+                    <rect x="20" y="42" width="24" height="3" rx="1.5" fill="#15803d" />
+                    <rect x="23" y="47" width="18" height="2.5" rx="1.25" fill="#13315c" />
+                </symbol>
+            </defs>
+        </svg>
     );
 }
 
-export default Header;
+function Icon({ name, className }) {
+    return (
+        <svg className={className} aria-hidden="true">
+            <use href={`#${name}`} />
+        </svg>
+    );
+}
+
+function Emblem({ className }) {
+    return EMBLEM_SRC ? (
+        <img className={className} src={EMBLEM_SRC} alt="" />
+    ) : (
+        <svg className={className} aria-hidden="true"><use href="#i-emblem" /></svg>
+    );
+}
+
+/* ===================================================================
+   HOOKS
+=================================================================== */
+function useHashView() {
+    const read = () => {
+        const h = window.location.hash.slice(1);
+        return VIEWS.includes(h) ? h : 'home';
+    };
+    const [view, setView] = useState(read);
+    const first = useRef(true);
+
+    useEffect(() => {
+        const onHash = () => setView(read());
+        window.addEventListener('hashchange', onHash);
+        return () => window.removeEventListener('hashchange', onHash);
+    }, []);
+
+    useEffect(() => {
+        document.title = `${VIEW_TITLES[view]} – SLRC Class III Posts`;
+        if (first.current) { first.current = false; return; }
+        const main = document.getElementById('main');
+        if (main) main.focus({ preventScroll: true });
+    }, [view]);
+
+    return view;
+}
+
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ===================================================================
+   HEADER PIECES
+=================================================================== */
+function GovStrip({ large, setLarge }) {
+    return (
+        <div className="gov-strip">
+            <div className="container">
+                <div className="gov-strip__ids">
+                    <div className="gov-strip__id"><span className="as" lang="as">অসম চৰকাৰ</span><span>Government of Assam</span></div>
+                    <div className="gov-strip__id"><span className="as" lang="as">নিযুক্তি আয়োগ</span><span>Recruitment Commission</span></div>
+                </div>
+                <div className="gov-strip__tools" role="group" aria-label="Text size">
+                    <button type="button" aria-pressed={!large} aria-label="Normal text size" onClick={() => setLarge(false)}>A</button>
+                    <button type="button" aria-pressed={large} aria-label="Larger text size" onClick={() => setLarge(true)}>A+</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function Masthead() {
+    return (
+        <header className="masthead">
+            <div className="container">
+                <a className="brand" href="#home" aria-label="Government of Assam – Recruitment Commission, Class III Posts – Home">
+                    <Emblem className="brand__emblem" />
+                    <span className="brand__text">
+                        <strong>Government of Assam</strong>
+                        <span>Recruitment Commission</span>
+                        <span>Class III Posts</span>
+                    </span>
+                </a>
+
+                <div className="title-block">
+                    <p className="title-block__as as" lang="as">ৰাজ্যিক স্তৰৰ নিযুক্তি আয়োগ</p>
+                    <h1>State Level Recruitment Commission for Class III Posts</h1>
+                    <p>Online Application Form for Recruitment of Class III Posts under Government of Assam</p>
+                </div>
+
+                <div className="portal-badge">
+                    <span className="portal-badge__title">Official Recruitment Portal</span>
+                    <span className="portal-badge__chip"><Icon name="i-shield" />Apply online only</span>
+                </div>
+            </div>
+            <div className="tricolour" aria-hidden="true"><span /><span /><span /></div>
+        </header>
+    );
+}
+
+function PrimaryNav({ view, navOpen, setNavOpen, applyOpen, setApplyOpen, applyBtnRef, applyMenuRef }) {
+    const closeAll = (returnFocus) => {
+        setApplyOpen(false);
+        if (returnFocus && applyBtnRef.current) applyBtnRef.current.focus();
+    };
+
+    const menuLinks = () => Array.from(applyMenuRef.current ? applyMenuRef.current.querySelectorAll('a') : []);
+
+    const onBtnKey = (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setApplyOpen(true);
+            setTimeout(() => { const l = menuLinks(); if (l[0]) l[0].focus(); }, 0);
+        }
+    };
+
+    const onMenuKey = (e) => {
+        const links = menuLinks();
+        const i = links.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') { e.preventDefault(); links[(i + 1) % links.length].focus(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); links[(i - 1 + links.length) % links.length].focus(); }
+        else if (e.key === 'Escape') { closeAll(true); }
+    };
+
+    const onMenuBlur = (e) => {
+        const next = e.relatedTarget;
+        if (!applyMenuRef.current.contains(next) && next !== applyBtnRef.current) setApplyOpen(false);
+    };
+
+    return (
+        <nav className="site-nav" aria-label="Primary">
+            <div className="container">
+                <button
+                    className="nav-toggle"
+                    type="button"
+                    aria-expanded={navOpen}
+                    aria-controls="navList"
+                    onClick={() => setNavOpen((o) => !o)}
+                >
+                    <Icon name={navOpen ? 'i-close' : 'i-menu'} /><span>Menu</span>
+                </button>
+
+                <ul className={`nav-list ${navOpen ? 'is-open' : ''}`} id="navList">
+                    {NAV_ITEMS.map((item) => (
+                        <li className="nav-item" key={item.label}>
+                            {item.children ? (
+                                <>
+                                    <button
+                                        ref={applyBtnRef}
+                                        className="nav-link"
+                                        type="button"
+                                        aria-haspopup="true"
+                                        aria-expanded={applyOpen}
+                                        aria-controls="applyMenu"
+                                        onClick={(e) => { e.stopPropagation(); setApplyOpen((o) => !o); }}
+                                        onKeyDown={onBtnKey}
+                                    >
+                                        <Icon name={item.icon} />{item.label}<Icon name="i-chev-down" className="chev" />
+                                    </button>
+                                    <ul
+                                        ref={applyMenuRef}
+                                        className={`dropdown ${applyOpen ? 'is-open' : ''}`}
+                                        id="applyMenu"
+                                        aria-label="Apply Online options"
+                                        onKeyDown={onMenuKey}
+                                        onBlur={onMenuBlur}
+                                    >
+                                        {item.children.map((c) => (
+                                            <li key={c.label}>
+                                                <a href={c.href} tabIndex={applyOpen ? 0 : -1}>
+                                                    <Icon name={c.icon} />
+                                                    <span><strong>{c.label}</strong><small>{c.hint}</small></span>
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            ) : (
+                                <a
+                                    className="nav-link"
+                                    href={`#${item.view}`}
+                                    aria-current={view === item.view ? 'page' : undefined}
+                                    onClick={() => setNavOpen(false)}
+                                >
+                                    <Icon name={item.icon} />{item.label}
+                                </a>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </nav>
+    );
+}
+
+function NewsTicker() {
+    const [index, setIndex] = useState(0);
+    const [paused, setPaused] = useState(prefersReducedMotion);
+    const pausedRef = useRef(paused);
+    const hoverRef = useRef(false);
+    const elapsed = useRef(0);
+    const barRef = useRef(null);
+
+    useEffect(() => { pausedRef.current = paused; }, [paused]);
+
+    useEffect(() => {
+        let raf;
+        let last = null;
+        const loop = (ts) => {
+            if (last !== null && !pausedRef.current && !hoverRef.current) {
+                elapsed.current += ts - last;
+                if (elapsed.current >= TICKER_MS) {
+                    elapsed.current = 0;
+                    setIndex((i) => (i + 1) % NEWS.length);
+                }
+            }
+            last = ts;
+            if (barRef.current) barRef.current.style.width = `${Math.min(100, (elapsed.current / TICKER_MS) * 100)}%`;
+            raf = requestAnimationFrame(loop);
+        };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+
+    const go = (step) => {
+        elapsed.current = 0;
+        setIndex((i) => (i + step + NEWS.length) % NEWS.length);
+    };
+
+    const n = NEWS[index];
+
+    return (
+        <section
+            className="news"
+            aria-label="Latest news"
+            onMouseEnter={() => { hoverRef.current = true; }}
+            onMouseLeave={() => { hoverRef.current = false; }}
+            onFocus={() => { hoverRef.current = true; }}
+            onBlur={() => { hoverRef.current = false; }}
+        >
+            <div className="container">
+                <div className="news__label">
+                    <span className="news__dot" aria-hidden="true" />
+                    <span className="news__label-text">Latest News</span>
+                    <span className="visually-hidden">Latest news</span>
+                </div>
+
+                <div className="news__viewport">
+                    <p className="news__item" key={index} aria-live="polite">
+                        <span className="news__tag">{n.isNew ? 'NEW' : n.type.toUpperCase()}</span>
+                        <a href="#home">{n.text}</a>
+                    </p>
+                </div>
+
+                <div className="news__controls">
+                    <span className="news__count">{index + 1} / {NEWS.length}</span>
+                    <button className="icon-btn" type="button" aria-label="Previous news item" onClick={() => go(-1)}>
+                        <Icon name="i-chev-left" />
+                    </button>
+                    <button
+                        className="icon-btn"
+                        type="button"
+                        aria-pressed={paused}
+                        aria-label={paused ? 'Play news ticker' : 'Pause news ticker'}
+                        onClick={() => setPaused((p) => !p)}
+                    >
+                        <Icon name={paused ? 'i-play' : 'i-pause'} />
+                    </button>
+                    <button className="icon-btn" type="button" aria-label="Next news item" onClick={() => go(1)}>
+                        <Icon name="i-chev-right" />
+                    </button>
+                </div>
+            </div>
+            <div className="news__progress" ref={barRef} aria-hidden="true" />
+        </section>
+    );
+}
+
+/* ===================================================================
+   VIEWS
+=================================================================== */
+function Breadcrumb({ current }) {
+    return (
+        <ol className="breadcrumb">
+            <li><a href="#home">Home</a></li>
+            <li aria-current="page">{current}</li>
+        </ol>
+    );
+}
+
+function EmptyCard({ icon, title, text }) {
+    return (
+        <div className="card">
+            <div className="empty">
+                <div className="empty__icon"><Icon name={icon} /></div>
+                <h4>{title}</h4>
+                <p>{text}</p>
+            </div>
+        </div>
+    );
+}
+
+/*function HomeView({ onApply }) {
+    const [query, setQuery] = useState('');
+    const [filter, setFilter] = useState('all');
+
+    const items = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return NEWS.filter((n) => (filter === 'all' || n.type === filter) && (!q || n.text.toLowerCase().includes(q)));
+    }, [query, filter]);
+
+    return (
+        <section aria-labelledby="homeHeading">
+            <div className="card hero">
+                <div className="hero__main">
+                    <span className="status-pill">Applications open</span>
+                    <h2 id="homeHeading">Online applications are open for Class III posts under Government of Assam</h2>
+                    <p>Use this official portal to apply for recruitment to Class III posts. Read the instructions carefully before you begin your application.</p>
+                    <div className="hero__actions">
+                        <button type="button" className="btn btn--accent" onClick={onApply}>
+                            <Icon name="i-edit" />Apply Online
+                        </button>
+                        <a className="btn btn--secondary" href="#instructions"><Icon name="i-book" />Read Instructions</a>
+                    </div>
+                </div>
+                <aside className="hero__aside" aria-label="How to use this portal">
+                    <h3>How to use this portal</h3>
+                    <ol>
+                        <li>Read the Instructions</li>
+                        <li>Apply Online</li>
+                        <li>Check FAQ or Contact Us for help</li>
+                    </ol>
+                </aside>
+            </div>
+
+            <div className="section-title"><h3>Quick links</h3></div>
+            <div className="quick-grid">
+                <a className="card quick-card" href="#instructions">
+                    <span className="quick-card__icon"><Icon name="i-book" /></span>
+                    <strong>Instructions</strong><span>Guidelines for filling in the online application form.</span>
+                    <em>View <Icon name="i-arrow" /></em>
+                </a>
+                <a className="card quick-card quick-card--accent" href="#apply" onClick={onApply}>
+                    <span className="quick-card__icon"><Icon name="i-edit" /></span>
+                    <strong>Apply Online</strong><span>Start or continue your application for Class III posts.</span>
+                    <em>Open <Icon name="i-arrow" /></em>
+                </a>
+                <a className="card quick-card" href="#faq">
+                    <span className="quick-card__icon"><Icon name="i-help" /></span>
+                    <strong>FAQ</strong><span>Answers to frequently asked questions.</span>
+                    <em>View <Icon name="i-arrow" /></em>
+                </a>
+                <a className="card quick-card" href="#contact">
+                    <span className="quick-card__icon"><Icon name="i-phone" /></span>
+                    <strong>Contact Us</strong><span>Get in touch with the helpdesk.</span>
+                    <em>View <Icon name="i-arrow" /></em>
+                </a>
+            </div>
+
+            <div className="home-grid">
+                <div className="card">
+                    <div className="card__head">
+                        <h3><Icon name="i-bell" />Latest News &amp; Notices</h3>
+                    </div>
+                    <div className="toolbar">
+                        <label className="search">
+                            <span className="visually-hidden">Search news</span>
+                            <Icon name="i-search" />
+                            <input
+                                className="input"
+                                type="search"
+                                placeholder="Search news…"
+                                autoComplete="off"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                            />
+                        </label>
+                        <label>
+                            <span className="visually-hidden">Filter by type</span>
+                            <select className="select" value={filter} onChange={(e) => setFilter(e.target.value)}>
+                                <option value="all">All types</option>
+                                <option value="Notice">Notices</option>
+                                <option value="Update">Updates</option>
+                            </select>
+                        </label>
+                    </div>
+                    <ul className="notice-list" aria-live="polite">
+                        {items.length === 0 ? (
+                            <li className="empty">
+                                <div className="empty__icon"><Icon name="i-search" /></div>
+                                <h4>No matching news</h4>
+                                <p>Try a different search term or choose “All types”.</p>
+                            </li>
+                        ) : (
+                            items.map((n) => {
+                                const d = new Date(`${n.date}T00:00:00`);
+                                return (
+                                    <li className="notice" key={n.text}>
+                                        <div className="notice__date" aria-hidden="true">
+                                            <span>{MONTHS[d.getMonth()]}</span><b>{d.getDate()}</b>
+                                        </div>
+                                        <div className="notice__body">
+                                            <a href="#home">{n.text}</a>
+                                            <div className="notice__meta">
+                                                <time dateTime={n.date}>{d.getDate()} {MONTHS[d.getMonth()]} {d.getFullYear()}</time>
+                                                <span className="badge badge--info">{n.type}</span>
+                                                {n.isNew && <span className="badge badge--new">New</span>}
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })
+                        )}
+                    </ul>
+                </div>
+
+                <div className="stack">
+                    <div className="alert alert--warn" role="note">
+                        <Icon name="i-warn" />
+                        <div><strong>Apply online only</strong>Applications are accepted only through this official portal.</div>
+                    </div>
+                    <div className="card">
+                        <div className="card__head"><h3><Icon name="i-help" />Need help?</h3></div>
+                        <div className="card__body" style={{ padding: 8 }}>
+                            <ul className="help-list">
+                                <li><a href="#instructions"><Icon name="i-book" />Instructions<Icon name="i-chev-right" /></a></li>
+                                <li><a href="#faq"><Icon name="i-help" />Frequently Asked Questions<Icon name="i-chev-right" /></a></li>
+                                <li><a href="#contact"><Icon name="i-phone" />Contact Us<Icon name="i-chev-right" /></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function InstructionsView() {
+    return (
+        <section aria-labelledby="instrHeading">
+            <div className="page-head">
+                <Breadcrumb current="Instructions" />
+                <h2 id="instrHeading">Instructions</h2>
+                <p>Guidelines for completing the Online Application Form for Class III posts.</p>
+            </div>
+            <EmptyCard
+                icon="i-book"
+                title="Instructions will appear here"
+                text="Insert the commission's published instructions in this section."
+            />
+        </section>
+    );
+}
+
+function FaqView() {
+    const [query, setQuery] = useState('');
+    const [open, setOpen] = useState(() => new Set());
+
+    const q = query.trim().toLowerCase();
+    const visible = FAQS.map((f, i) => ({ ...f, i })).filter((f) => !q || `${f.q} ${f.a}`.toLowerCase().includes(q));
+    const allOpen = FAQS.every((_, i) => open.has(i));
+
+    const toggle = (i) => setOpen((prev) => {
+        const next = new Set(prev);
+        next.has(i) ? next.delete(i) : next.add(i);
+        return next;
+    });
+
+    return (
+        <section aria-labelledby="faqHeading">
+            <div className="page-head">
+                <Breadcrumb current="FAQ" />
+                <h2 id="faqHeading">Frequently Asked Questions</h2>
+                <p>Search or browse common questions about the online application.</p>
+            </div>
+            <div className="card">
+                <div className="toolbar">
+                    <label className="search">
+                        <span className="visually-hidden">Search FAQs</span>
+                        <Icon name="i-search" />
+                        <input
+                            className="input"
+                            type="search"
+                            placeholder="Search questions…"
+                            autoComplete="off"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => setOpen(allOpen ? new Set() : new Set(FAQS.map((_, i) => i)))}
+                    >
+                        {allOpen ? 'Collapse all' : 'Expand all'}
+                    </button>
+                </div>
+                <ul className="accordion">
+                    {visible.map((f) => {
+                        const isOpen = open.has(f.i);
+                        return (
+                            <li className="acc-item" key={f.q}>
+                                <h3>
+                                    <button
+                                        className="acc-btn"
+                                        type="button"
+                                        id={`faq-b${f.i}`}
+                                        aria-expanded={isOpen}
+                                        aria-controls={`faq-p${f.i}`}
+                                        onClick={() => toggle(f.i)}
+                                    >
+                                        <span>{f.q}</span><Icon name="i-chev-down" />
+                                    </button>
+                                </h3>
+                                <div className="acc-panel" id={`faq-p${f.i}`} role="region" aria-labelledby={`faq-b${f.i}`} hidden={!isOpen}>
+                                    <p>{f.a}</p>
+                                </div>
+                            </li>
+                        );
+                    })}
+                    {visible.length === 0 && (
+                        <li className="empty">
+                            <div className="empty__icon"><Icon name="i-search" /></div>
+                            <h4>No questions found</h4>
+                            <p>Try another keyword, or visit Contact Us for help.</p>
+                        </li>
+                    )}
+                </ul>
+            </div>
+        </section>
+    );
+}
+
+function ContactView() {
+    return (
+        <section aria-labelledby="contactHeading">
+            <div className="page-head">
+                <Breadcrumb current="Contact Us" />
+                <h2 id="contactHeading">Contact Us</h2>
+                <p>Helpdesk details for applicants.</p>
+            </div>
+            <EmptyCard
+                icon="i-phone"
+                title="Contact details will appear here"
+                text="Insert the official helpdesk phone numbers, email and office address in this section."
+            />
+        </section>
+    );
+}
+*/
+/* ===================================================================
+   FOOTER + BACK TO TOP
+=================================================================== */
+{/*function Footer({ onApply }) {
+    return (
+        <footer className="site-footer">
+            <div className="container">
+                <div className="footer-about">
+                    <div className="footer-brand">
+                        <Emblem />
+                        <div>
+                            <strong>State Level Recruitment Commission for Class III Posts</strong>
+                            <span className="as" lang="as">ৰাজ্যিক স্তৰৰ নিযুক্তি আয়োগ</span>
+                        </div>
+                    </div>
+                    <p>Official Recruitment Portal · Government of Assam</p>
+                    <p>Online Application Form for Recruitment of Class III Posts.</p>
+                </div>
+                <div>
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#instructions">Instructions</a></li>
+                        <li><a href="#apply" onClick={onApply}>Apply Online</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="#contact">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Important</h4>
+                    <p>Applications are accepted online only through this portal.</p>
+                </div>
+            </div>
+            <div className="footer-bottom">
+                <div className="container">
+                    <span>© {new Date().getFullYear()} Government of Assam · Recruitment Commission</span>
+                </div>
+            </div>
+        </footer>
+    );
+}*/}
+
+function BackToTop() {
+    const [show, setShow] = useState(false);
+    useEffect(() => {
+        const onScroll = () => setShow(window.pageYOffset > 400);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+    return (
+        <button
+            className={`to-top ${show ? 'is-visible' : ''}`}
+            type="button"
+            aria-label="Back to top"
+            onClick={() => window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })}
+        >
+            <Icon name="i-up" />
+        </button>
+    );
+}
+
+/* ===================================================================
+   APP
+=================================================================== */
+export default function SebaPortal() {
+    const view = useHashView();
+    const [navOpen, setNavOpen] = useState(false);
+    const [applyOpen, setApplyOpen] = useState(false);
+    const [large, setLarge] = useState(() => {
+        try { return localStorage.getItem('seba-text-lg') === '1'; } catch (e) { return false; }
+    });
+    const applyBtnRef = useRef(null);
+    const applyMenuRef = useRef(null);
+
+    // text size
+    useEffect(() => {
+        document.documentElement.classList.toggle('seba-text-lg', large);
+        try { localStorage.setItem('seba-text-lg', large ? '1' : '0'); } catch (e) { /* ignore */ }
+        return () => document.documentElement.classList.remove('seba-text-lg');
+    }, [large]);
+
+    // close menus when the view changes
+    useEffect(() => { setNavOpen(false); setApplyOpen(false); }, [view]);
+
+    // outside click + Escape
+    useEffect(() => {
+        const onClick = (e) => {
+            const inMenu = applyMenuRef.current && applyMenuRef.current.contains(e.target);
+            const onBtn = applyBtnRef.current && applyBtnRef.current.contains(e.target);
+            if (!inMenu && !onBtn) setApplyOpen(false);
+        };
+        const onKey = (e) => { if (e.key === 'Escape') { setApplyOpen(false); setNavOpen(false); } };
+        document.addEventListener('click', onClick);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, []);
+
+    // "Apply Online" buttons elsewhere on the page open the nav dropdown
+    const openApply = useCallback((e) => {
+        if (e && e.preventDefault) { e.preventDefault(); e.stopPropagation(); }
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        if (window.innerWidth <= 860) setNavOpen(true);
+        setTimeout(() => {
+            setApplyOpen(true);
+            setTimeout(() => {
+                const first = applyMenuRef.current && applyMenuRef.current.querySelector('a');
+                if (first) first.focus();
+            }, 0);
+        }, prefersReducedMotion() ? 0 : 250);
+    }, []);
+
+    return (
+        <div className="seba-app">
+            <style>{CSS}</style>
+            <IconSprite />
+            <a className="skip-link" href="#main">Skip to main content</a>
+
+            <GovStrip large={large} setLarge={setLarge} />
+            <Masthead />
+            <PrimaryNav
+                view={view}
+                navOpen={navOpen}
+                setNavOpen={setNavOpen}
+                applyOpen={applyOpen}
+                setApplyOpen={setApplyOpen}
+                applyBtnRef={applyBtnRef}
+                applyMenuRef={applyMenuRef}
+            />
+            <NewsTicker />
+
+            {/*<main id="main" tabIndex={-1}>
+                <div className="container">
+                    {view === 'home' && <HomeView onApply={openApply} />}
+                    {view === 'instructions' && <InstructionsView />}
+                    {view === 'faq' && <FaqView />}
+                    {view === 'contact' && <ContactView />}
+                </div>
+            </main>*/}
+
+            {/*<Footer onApply={openApply} /> */}
+            
+        </div>
+    );
+}
