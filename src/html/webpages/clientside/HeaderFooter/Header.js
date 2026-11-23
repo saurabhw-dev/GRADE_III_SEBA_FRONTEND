@@ -9,20 +9,40 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // If empty, the built-in placeholder seal is used.
 const EMBLEM_SRC = '/img/emblem_of_india_colorful.png';
 
+
+
+const LANDING_PAGE = `${window.location.origin}/slrc/`;
+
 const NAV_ITEMS = [
-    { label: 'Home', view: 'home', icon: 'i-home' },
-    { label: 'Instructions', view: 'instructions', icon: 'i-book' },
+    { label: 'Home', href: LANDING_PAGE, icon: 'i-home' },
+
+    { label: 'Instructions', href: LANDING_PAGE + '#instructions', icon: 'i-book' },
+
     {
         label: 'Apply Online',
         icon: 'i-edit',
         children: [
-            { label: 'Register via DigiLocker', hint: 'First-time applicants', href: '/slrc/register', icon: 'i-user-plus' },
-            { label: "Candidate's Login", hint: 'Continue or view your application', href: '/slrc/Login', icon: 'i-login' },
+            {
+                label: 'Register via DigiLocker',
+                hint: 'First-time applicants',
+                href: '/slrc/register',
+                icon: 'i-user-plus'
+            },
+            {
+                label: "Candidate's Login",
+                hint: 'Continue or view your application',
+                href: '/slrc/Login',
+                icon: 'i-login'
+            },
         ],
     },
-    { label: 'FAQ', view: 'faq', icon: 'i-help' },
-    { label: 'Contact Us', view: 'contact', icon: 'i-phone' },
+
+    { label: 'FAQ', href: LANDING_PAGE + '#faq', icon: 'i-help' },
+
+    { label: 'Contact Us', href: LANDING_PAGE + '#contact', icon: 'i-phone' },
 ];
+
+
 
 const NEWS = [
     { text: 'Online applications are open for Class III posts under Government of Assam', type: 'Notice', date: '2026-11-18', isNew: true },
@@ -459,14 +479,14 @@ function PrimaryNav({ view, navOpen, setNavOpen, applyOpen, setApplyOpen, applyB
                                     </ul>
                                 </>
                             ) : (
-                                <a
-                                    className="nav-link"
-                                    href={`#${item.view}`}
-                                    aria-current={view === item.view ? 'page' : undefined}
-                                    onClick={() => setNavOpen(false)}
-                                >
-                                    <Icon name={item.icon} />{item.label}
-                                </a>
+								<a
+								    className="nav-link"
+								    href={item.href}
+								    onClick={() => setNavOpen(false)}
+								>
+								    <Icon name={item.icon} />
+								    {item.label}
+								</a>
                             )}
                         </li>
                     ))}

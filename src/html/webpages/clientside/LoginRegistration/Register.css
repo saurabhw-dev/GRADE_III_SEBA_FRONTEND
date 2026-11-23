@@ -1,0 +1,312 @@
+
+.register-page {
+    background: #f4f7fa;
+    min-height: 100vh;
+}
+
+.register-container {
+    max-width: 900px;
+    margin: 35px auto;
+    padding: 15px 20px;
+}
+
+.register-heading {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.register-heading h2 {
+    color: #173b62;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.register-heading p {
+    color: #788797;
+    font-size: 14px;
+}
+
+.digilocker-card {
+    max-width: 440px;
+    margin: 50px auto;
+    padding: 35px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+}
+
+.digilocker-icon {
+    width: 65px;
+    height: 65px;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #eaf2ff;
+    color: #1765b5;
+    font-size: 27px;
+}
+
+.digilocker-card h3 {
+    color: #173b62;
+    font-size: 19px;
+}
+
+.digilocker-card p {
+    color: #718096;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0 22px;
+}
+
+.digilocker-btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 5px;
+    background: #1765b5;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.digilocker-btn:hover {
+    background: #104d91;
+}
+
+.digilocker-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.registration-card {
+    background: #fff;
+    border: 1px solid #e1e8ef;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.03);
+}
+
+.success-banner {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 15px;
+    background: #edf8f0;
+    border: 1px solid #ccebd5;
+    border-radius: 6px;
+    margin-bottom: 25px;
+}
+
+.success-banner > span {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #239653;
+    color: white;
+    border-radius: 50%;
+}
+
+.success-banner strong {
+    color: #176b3a;
+    font-size: 14px;
+}
+
+.success-banner p {
+    color: #65836f;
+    font-size: 12px;
+    margin: 4px 0 0;
+}
+
+.details-section {
+    border: 1px solid #e4eaf0;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.details-section h3 {
+    color: #23486b;
+    font-size: 16px;
+    border-bottom: 1px solid #e8edf2;
+    padding-bottom: 13px;
+    margin: 0 0 18px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.detail-item {
+    padding: 13px;
+    background: #f7f9fc;
+    border: 1px solid #edf0f4;
+    border-radius: 5px;
+}
+
+.detail-item label {
+    display: block;
+    color: #788797;
+    font-size: 12px;
+    margin-bottom: 7px;
+}
+
+.detail-item p {
+    color: #263e58;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    word-break: break-word;
+}
+
+.error-message {
+    color: #dc3545 !important;
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .registration-card {
+        padding: 13px;
+    }
+
+    .digilocker-card {
+        padding: 25px 18px;
+    }
+}
+
+
+/* Compact Registration Page */
+
+.register-container {
+    max-width: 850px;
+    margin: 20px auto;
+    padding: 10px 15px;
+}
+
+.register-heading {
+    margin-bottom: 15px;
+}
+
+.register-heading h2 {
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+
+.register-heading p {
+    font-size: 13px;
+    margin: 0;
+}
+
+.digilocker-card,
+.registration-card {
+    padding: 18px 22px;
+    border-radius: 8px;
+    margin: 12px auto;
+}
+
+.digilocker-icon {
+    margin-bottom: 8px;
+    font-size: 28px;
+}
+
+.digilocker-card h3 {
+    font-size: 17px;
+    margin: 8px 0;
+}
+
+.digilocker-card p {
+    font-size: 13px;
+    margin: 6px 0 12px;
+}
+
+.digilocker-btn {
+    padding: 9px 18px;
+    font-size: 13px;
+}
+
+.success-banner {
+    padding: 10px 14px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+}
+
+.success-banner strong {
+    font-size: 14px;
+}
+
+.success-banner p {
+    font-size: 12px;
+    margin: 3px 0 0;
+}
+
+.details-section {
+    margin-top: 12px;
+    padding: 12px 15px;
+    border-radius: 7px;
+}
+
+.details-section h3 {
+    font-size: 15px;
+    margin: 0 0 12px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.detail-item {
+    padding: 9px 12px;
+    border-radius: 5px;
+}
+
+.detail-item label {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.detail-item p {
+    font-size: 13px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.error-message {
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+@media (max-width: 600px) {
+    .register-container {
+        padding: 8px 10px;
+        margin: 12px auto;
+    }
+
+    .digilocker-card,
+    .registration-card {
+        padding: 12px;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .details-section {
+        padding: 10px;
+    }
+}
+

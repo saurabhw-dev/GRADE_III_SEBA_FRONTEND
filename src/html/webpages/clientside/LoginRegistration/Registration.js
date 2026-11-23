@@ -1,7 +1,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import Header from '../HeaderFooter/Header';
+import Footer from '../HeaderFooter/Footer';
+import './Register.css';
+import API_BASE_URL from '../../../../apiConfig';
 
-const API_BASE_URL = "http://localhost";
+//const API_BASE_URL = "http://localhost";
 
 function Register() {
 
@@ -9,15 +13,40 @@ function Register() {
     const [digilockerProfile, setDigilockerProfile] = useState(null);
     const [digilockerError, setDigilockerError] = useState("");
 
+    const [drivingData, setDrivingData] = useState(null);
+    const [panData, setPanData] = useState(null);
+
     const callbackProcessed = useRef(false);
 
-    // Continue with DigiLocker
+    const [formData, setFormData] = useState({
+        name: "",
+        dob: "",
+        gender: "",
+        mobile: "",
+        email: "",
+        address: "",
+        pan: "",
+        aadhaar: ""
+    });
+
+    // Continue with DigiLocker - ORIGINAL LOGIC
     const continueWithDigiLocker = () => {
         setDigilockerLoading(true);
         window.location.href = API_BASE_URL + "/api/digilocker/authorize";
     };
 
+    // Handle form changes
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
     // Handle DigiLocker redirect back to React
+    // ORIGINAL API FLOW PRESERVED
     useEffect(() => {
 
         const params = new URLSearchParams(window.location.search);
@@ -63,82 +92,51 @@ function Register() {
                     throw new Error("Unable to verify DigiLocker authentication.");
                 }
 
-				const data = await response.json();
+                const data = await response.json();
 
-				setDigilockerProfile(data);
+                setDigilockerProfile(data);
 
-				// Now retrieve e-Aadhaar
-				/*const aadhaarResponse = await fetch(
-				    API_BASE_URL + "/api/digilocker/eaadhaar",
-				    {
-				        method: "GET",
-				        credentials: "include"
-				    }
-				);
+                // Retrieve Driving Licence
+                const drivingResponse = await fetch(
+                    API_BASE_URL + "/api/digilocker/driving-license",
+                    {
+                        method: "GET",
+                        credentials: "include"
+                    }
+                );
 
-				if (!aadhaarResponse.ok) {
-				    throw new Error("Unable to retrieve e-Aadhaar document.");
-				}
+                if (!drivingResponse.ok) {
+                    throw new Error("Unable to retrieve Driving Licence details.");
+                }
 
-				const aadhaarData = await aadhaarResponse.json();
+                const drivingData = await drivingResponse.json();
 
-				console.log("DigiLocker Profile:", data);
-				console.log("e-Aadhaar Response:", aadhaarData);*/
-				
-				// Retrieve Driving Licence issued documents
-				const drivingResponse = await fetch(
-				    API_BASE_URL + "/api/digilocker/driving-license",
-				    {
-				        method: "GET",
-				        credentials: "include"
-				    }
-				);
+                setDrivingData(drivingData);
 
-				if (!drivingResponse.ok) {
-				    throw new Error("Unable to retrieve Driving Licence details.");
-				}
+                console.log("Driving Licence Documents:", drivingData);
 
-				const drivingData = await drivingResponse.json();
+                // Retrieve PAN Card
+                const panResponse = await fetch(
+                    API_BASE_URL + "/api/digilocker/pan-card",
+                    {
+                        method: "GET",
+                        credentials: "include"
+                    }
+                );
 
-				console.log("DigiLocker Profile:", data);
-				console.log("Driving Licence Documents:", drivingData);
-				
-				
-				/*const drivingXmlResponse = await fetch(
-				    API_BASE_URL + "/api/digilocker/driving-license-xml",
-				    {
-				        method: "GET",
-				        credentials: "include"
-				    }
-				);
+                const panData = await panResponse.json();
 
-				const drivingXmlData = await drivingXmlResponse.json();
+                if (!panResponse.ok) {
+                    throw new Error(
+                        panData.message || "Unable to retrieve PAN Card XML."
+                    );
+                }
 
-				if (!drivingXmlResponse.ok) {
-				    throw new Error(
-				        drivingXmlData.message || "Unable to retrieve Driving Licence XML."
-				    );
-				}
+                setPanData(panData);
 
-				console.log("Driving Licence XML:", drivingXmlData.xml);
-				*/
-				const panResponse = await fetch(
-				    API_BASE_URL + "/api/digilocker/pan-card",
-				    {
-				        method: "GET",
-				        credentials: "include"
-				    }
-				);
+                console.log("PAN Card XML:", panData.xml);
+                console.log("DigiLocker Profile:", data);
 
-				const panData = await panResponse.json();
-
-				if (!panResponse.ok) {
-				    throw new Error(
-				        panData.message || "Unable to retrieve PAN Card XML."
-				    );
-				}
-
-				console.log("PAN Card XML:", panData.xml);
                 // Remove code and state from browser URL
                 window.history.replaceState(
                     {},
@@ -146,52 +144,154 @@ function Register() {
                     window.location.pathname
                 );
 
-                console.log("DigiLocker Profile:", data);
-
             } catch (err) {
 
                 setDigilockerError(err.message);
                 callbackProcessed.current = false;
 
             } finally {
+
                 setDigilockerLoading(false);
+
             }
+
         };
 
         exchangeCode();
 
     }, []);
 
+
     return (
-        <div>
+        <div className="register-page">
 
-            <button
-                type="button"
-                onClick={continueWithDigiLocker}
-                disabled={digilockerLoading}
-            >
-                {digilockerLoading
-                    ? "Please wait..."
-                    : "Continue with DigiLocker"}
-            </button>
+            <Header />
 
-            {digilockerError && (
-                <p style={{ color: "red" }}>
-                    {digilockerError}
-                </p>
-            )}
+            <div className="register-container">
 
-            {digilockerProfile && (
-                <div>
-                    <h3>DigiLocker Verification Successful</h3>
-                    <pre>
-                        {JSON.stringify(digilockerProfile, null, 2)}
-                    </pre>
+                <div className="register-heading">
+                    <h2>Candidate Registration</h2>
+                    <p>Verify your details and complete registration</p>
                 </div>
-            )}
+
+                {!digilockerProfile && (
+                    <div className="digilocker-card">
+                        <div className="digilocker-icon">
+                            <i className="fa fa-id-card"></i>
+                        </div>
+
+                        <h3>Continue with DigiLocker</h3>
+
+                        <p>
+                            Fetch your verified personal details securely
+                            from your DigiLocker account.
+                        </p>
+
+                        <button
+                            type="button"
+                            className="digilocker-btn"
+                            onClick={continueWithDigiLocker}
+                            disabled={digilockerLoading}
+                        >
+                            {digilockerLoading
+                                ? "Please wait..."
+                                : "Continue with DigiLocker"}
+                        </button>
+
+                        {digilockerError && (
+                            <p className="error-message">
+                                {digilockerError}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {digilockerProfile && (
+                    <div className="registration-card">
+
+                        <div className="success-banner">
+                            <span>✓</span>
+                            <div>
+                                <strong>Verification Successful</strong>
+                                <p>DigiLocker details retrieved successfully</p>
+                            </div>
+                        </div>
+
+                        <div className="details-section">
+                            <h3>DigiLocker Personal Details</h3>
+
+                            <div className="details-grid">
+
+                                <div className="detail-item">
+                                    <label>Full Name</label>
+                                    <p>{digilockerProfile.name || "Not Available"}</p>
+                                </div>
+
+                                <div className="detail-item">
+                                    <label>Date of Birth</label>
+                                    <p>{digilockerProfile.dob || "Not Available"}</p>
+                                </div>
+
+                                <div className="detail-item">
+                                    <label>Gender</label>
+                                    <p>{digilockerProfile.gender || "Not Available"}</p>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {panData && panData.xml && (() => {
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(panData.xml, "text/xml");
+
+                            const person = xmlDoc.getElementsByTagName("Person")[0];
+                            const pan = xmlDoc.getElementsByTagName("PAN")[0];
+
+                            const panName = person?.getAttribute("name");
+                            const panDob = person?.getAttribute("dob");
+                            const panNumber = pan?.getAttribute("num");
+							const panGender = person?.getAttribute("gender");
+
+                            return (
+                                <div className="details-section">
+                                    <h3>PAN Card Details</h3>
+
+                                    <div className="details-grid">
+                                        <div className="detail-item">
+                                            <label>PAN Holder Name</label>
+                                            <p>{panName || "Not Available"}</p>
+                                        </div>
+
+                                        <div className="detail-item">
+                                            <label>PAN Number</label>
+                                            <p>{panNumber || "Not Available"}</p>
+                                        </div>
+
+                                        <div className="detail-item">
+                                            <label>Date of Birth</label>
+                                            <p>{panDob || "Not Available"}</p>
+                                        </div>
+
+                                        <div className="detail-item">
+                                            <label>Gender</label>
+                                            <p>{panGender || "Not Available"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                    </div>
+                )}
+
+            </div>
+
+            <Footer />
 
         </div>
     );
+
+
 }
 
 export default Register;
