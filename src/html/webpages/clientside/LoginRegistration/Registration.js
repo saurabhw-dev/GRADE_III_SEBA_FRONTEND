@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { FiPhone, FiLock, FiEdit } from "react-icons/fi";
 import Header from '../HeaderFooter/Header';
 import Footer from '../HeaderFooter/Footer';
@@ -27,7 +28,15 @@ function formatGender(value) {
 }
 
 function Register() {
-
+	
+	const [alertBox, setAlertBox] = useState({
+	    show: false,
+	    type: "",
+	    message: ""
+	});
+	
+	
+	const navigate = useNavigate();
     const [digilockerLoading, setDigilockerLoading] = useState(false);
     const [digilockerProfile, setDigilockerProfile] = useState(null);
     const [digilockerError, setDigilockerError] = useState("");
@@ -53,8 +62,8 @@ function Register() {
     const [passwordTouched, setPasswordTouched] = useState(false);
     const [confirmTouched, setConfirmTouched] = useState(false);
 
-    const [registerMessage, setRegisterMessage] = useState("");
-
+    
+	const [academicYear, setAcademicYear] = useState("2027-28");
     // Continue with DigiLocker
     const continueWithDigiLocker = () => {
         setDigilockerLoading(true);
@@ -152,6 +161,8 @@ function Register() {
                 console.log("PAN Card XML:", panResult.xml);
                 console.log("DigiLocker Profile:", data);
 
+				
+				
                 // Remove code and state from URL
                 window.history.replaceState(
                     {},
@@ -246,9 +257,84 @@ function Register() {
             setMobileChecking(false);
         }
     };
+	
+	
+
+	const [panChecking, setPanChecking] = useState(false);
+	const [panExists, setPanExists] = useState(false);
+	
+	const checkPanCardExist = async (panNo) => {
+	    try {
+	        setPanChecking(true);
+	        setPanExists(false);
+
+	        const response = await fetch(
+	            `${API_BASE_URL}/api/registrationlogin/checkPanCardExist?pancard=${encodeURIComponent(panNo)}`,
+	            {
+	                method: "POST"
+	            }
+	        );
+
+	        const data = await response.json();
+
+	        if (data.exists === true) {
+	            setPanExists(true);
+	        }
+
+	    } catch (error) {
+	        console.error("PAN card check failed:", error);
+	    } finally {
+	        setPanChecking(false);
+	    }
+	};
+	
+	useEffect(() => {
+	    if (panDetails.number) {
+	        checkPanCardExist(panDetails.number.trim().toUpperCase());
+	    }
+	}, [panDetails.number]);
 
 
+	const [aadhaarChecking, setAadhaarChecking] = useState(false);
+	const [aadhaarExists, setAadhaarExists] = useState(false);
+	const [aadhaarMessage, setAadhaarMessage] = useState("");
+	
+	
+	const checkAadhaarCardExist = async (aadhaarNo) => {
+	    try {
+	        setAadhaarChecking(true);
+	        setAadhaarExists(false);
+	        setAadhaarMessage("");
 
+	        const response = await fetch(
+	            `${API_BASE_URL}/api/registrationlogin/checkAadhaarCardExist?adharcard=${encodeURIComponent(aadhaarNo)}`,
+	            {
+	                method: "POST"
+	            }
+	        );
+
+	        const data = await response.json();
+
+	        console.log("Aadhaar API Response:", data);
+
+	        if (data.exists === true) {
+	            setAadhaarExists(true);
+	            setAadhaarMessage(data.message || "This Aadhaar Card number is already registered.");
+	        }
+
+	    } catch (error) {
+	        console.error("Aadhaar card check failed:", error);
+	    } finally {
+	        setAadhaarChecking(false);
+	    }
+	};
+	
+	useEffect(() => {
+	    if (panDetails.number) {
+	        checkAadhaarCardExist(panDetails.number);
+	    }
+	}, [panDetails.number]);
+	
     const emailError = !email.trim()
         ? "Please enter your email address."
         : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -298,6 +384,8 @@ function Register() {
         !!panDetails.number &&
         !!panDetails.dob &&
         !!panDetails.gender &&
+		!panExists && 
+		!panChecking &&
         !mobileError &&
         !mobileExists &&
         !mobileChecking &&
@@ -306,41 +394,107 @@ function Register() {
         !!confirmPassword;
 
     // Register button
-    const handleRegister = (e) => {
+	const [registerLoading, setRegisterLoading] = useState(false);
+	const [registerMessage, setRegisterMessage] = useState("");
+	const handleRegister = async (e) => {
+	    e.preventDefault();
+		
+	    setEmailTouched(true);
+	    setPasswordTouched(true);
+	    setConfirmTouched(true);
+	    setRegisterMessage("");
 
-        e.preventDefault();
+	    if (!digilockerProfile) {
+	        setRegisterMessage("Please complete DigiLocker verification first.");
+	        return;
+	    }
 
-        setEmailTouched(true);
-        setPasswordTouched(true);
-        setConfirmTouched(true);
-        setRegisterMessage("");
+	    /*if (emailError) {
+	        return;
+	    }*/
 
-        if (!digilockerProfile) {
-            setRegisterMessage("Please complete DigiLocker verification first.");
-            return;
-        }
+	    if (!passwordValid) {
+	        return;
+	    }
 
-        if (emailError) {
-            return;
-        }
+	    if (password !== confirmPassword) {
+	        return;
+	    }
 
-        if (!passwordValid) {
-            return;
-        }
+	    if (!isFormValid) {
+	        return;
+	    }
+	    try {
+	        setRegisterLoading(true);
 
-        if (password !== confirmPassword) {
-            return;
-        }
+	        const registrationData = {
+	            academicyear: academicYear,
+	            name: panDetails.name || "",
+	            dob: panDetails.dob || "",
+	            gender: panDetails.gender || "",
+	            mobileno: mobile,
+	            aadhaarcard: panDetails.number || "",
+	            pancard: panDetails.number || "",
+	            password: password,
+	            confirmpassword: confirmPassword
+	        };
 
-        // Registration API is not connected yet.
-        setRegisterMessage(
-            "Details verified successfully. Please connect the registration API to complete account creation."
-        );
+	        console.log("Registration Data:", registrationData);
 
+	        const response = await fetch(
+	            `${API_BASE_URL}/api/registrationlogin/register`,
+	            {
+	                method: "POST",
+	                headers: {
+	                    "Content-Type": "application/json"
+	                },
+	                body: JSON.stringify(registrationData)
+	            }
+	        );
 
+	        const data = await response.json();
 
-    };
+	        console.log("Registration Response:", data);
 
+			if (response.ok && data.success === true) {
+
+			    setAlertBox({
+			        show: true,
+			        type: "success",
+			        message: data.message || "Registration completed successfully!"
+			    });
+
+			    setTimeout(() => {
+			        navigate("/slrc/login");
+			    }, 5000);
+
+			} else {
+
+			    setAlertBox({
+			        show: true,
+			        type: "error",
+			        message: data.message || "Registration failed. Please try again."
+			    });
+
+			    setTimeout(() => {
+			        setAlertBox({
+			            show: false,
+			            type: "",
+			            message: ""
+			        });
+			    }, 5000);
+			}
+
+	    } catch (error) {
+	        console.error("Registration Error:", error);
+	        setRegisterMessage("Unable to complete registration. Please try again.");
+	    } finally {
+	        setRegisterLoading(false);
+	    }
+	};
+
+	
+	
     return (
 
         <div className="register-page">
@@ -428,8 +582,17 @@ function Register() {
 
                                     <div className="dls-details dls-details-4">
 
+
                                         <div className="dls-detail">
-                                            <label>PAN Holder Name</label>
+                                            <label>Academic Year</label>
+											<input
+											    type="text"
+											    value={academicYear}
+											    disabled
+											/>
+                                        </div>
+                                        <div className="dls-detail">
+                                            <label>Candidate Name</label>
                                             <input
                                                 type="text"
                                                 value={panDetails.name || "Not Available"}
@@ -446,14 +609,7 @@ function Register() {
                                             />
                                         </div>
 
-                                        <div className="dls-detail">
-                                            <label>PAN Number</label>
-                                            <input
-                                                type="text"
-                                                value={panDetails.number || "Not Available"}
-                                                readOnly
-                                            />
-                                        </div>
+
 
 
 
@@ -465,6 +621,59 @@ function Register() {
                                                 readOnly
                                             />
                                         </div>
+
+										<div className="dls-detail">
+										    <label>Candidate PAN Number</label>
+
+											<input
+											    type="text"
+											    value={panDetails.number || "Not Available"}
+											    readOnly
+											    onClick={() => {
+											        if (panDetails.number) {
+											            checkPanCardExist(panDetails.number);
+											        }
+											    }}
+											/>
+
+										    {panChecking && (
+										        <p className="dls-field-error">Checking PAN number...</p>
+										    )}
+
+										    {!panChecking && panExists && (
+										        <p className="dls-field-error">
+										            PAN Card number is already registered.
+										        </p>
+										    )}
+										</div>
+										
+										<div className="dls-detail">
+										    <label>Candidate Aadhaar Number</label>
+
+											<input
+											      type="text"
+											      value={panDetails.number || ""}
+											      placeholder="Aadhaar Number"
+											      readOnly
+											      onClick={() => {
+											          if (panDetails.number) {
+											              checkAadhaarCardExist(panDetails.number);
+											          }
+											      }}
+											  />
+
+										    {aadhaarChecking && (
+										        <p className="dls-field-error">
+										            Checking Aadhaar number...
+										        </p>
+										    )}
+
+										    {!aadhaarChecking && aadhaarExists && (
+										        <p className="dls-field-error">
+										            {aadhaarMessage}
+										        </p>
+										    )}
+										</div>
 
                                     </div>
 
@@ -525,7 +734,7 @@ function Register() {
 
                                             {mobileTouched && !mobileError && !mobileChecking && mobileExists && (
                                                 <p className="dls-field-error">
-                                                    The mobile number is already registered.
+                                                     mobile number is already registered.
                                                 </p>
                                             )}
 
@@ -587,7 +796,7 @@ function Register() {
 
                                                 <div className="dls-input-wrap">
 
-                                                   <FiLock className="dls-input-icon" />
+                                                    <FiLock className="dls-input-icon" />
 
                                                     <input
                                                         type={showPassword ? "text" : "password"}
@@ -742,11 +951,11 @@ function Register() {
                                         Click <strong>Register</strong> to complete your registration.
                                     </p>
 
-                                    <button
-                                        type="submit"
-                                        className="dls-register-btn"
-                                        disabled={!isFormValid}
-                                    >
+									<button
+									    type="submit"
+									    className="dls-register-btn"
+									    disabled={!isFormValid || registerLoading}
+									>
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="20"
@@ -769,8 +978,32 @@ function Register() {
                                 </div>
 
                             </form>
+							
+							{alertBox.show && (
+							    <div className="dls-alert-overlay">
+							        <div className={`dls-alert-popup ${alertBox.type}`}>
+
+							            <div className="dls-alert-icon">
+							                {alertBox.type === "success" ? "✓" : "!"}
+							            </div>
+
+							            <h3>
+							                {alertBox.type === "success" ? "Success!" : "Alert!"}
+							            </h3>
+
+							            <p>{alertBox.message}</p>
+
+							            <div className="dls-alert-progress">
+							                <div></div>
+							            </div>
+
+							        </div>
+							    </div>
+							)}
 
                         </div>
+						
+						
 
                     )}
 
