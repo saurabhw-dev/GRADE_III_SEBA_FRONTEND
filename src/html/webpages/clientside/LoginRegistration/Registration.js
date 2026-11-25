@@ -1,8 +1,9 @@
-
 import React, { useEffect, useRef, useState } from 'react';
+import { FiPhone, FiLock, FiEdit } from "react-icons/fi";
 import Header from '../HeaderFooter/Header';
 import Footer from '../HeaderFooter/Footer';
 import './Register.css';
+
 import API_BASE_URL from '../../../../apiConfig';
 
 function formatDob(value) {
@@ -36,7 +37,13 @@ function Register() {
 
     const callbackProcessed = useRef(false);
 
-    // Password states
+    // Email and password states
+    const [email, setEmail] = useState("");
+    const [emailTouched, setEmailTouched] = useState(false);
+
+    const [mobile, setMobile] = useState("");
+    const [mobileTouched, setMobileTouched] = useState(false);
+
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -117,11 +124,11 @@ function Register() {
                     throw new Error("Unable to retrieve Driving Licence details.");
                 }
 
-                const drivingData = await drivingResponse.json();
+                const drivingResult = await drivingResponse.json();
 
-                setDrivingData(drivingData);
+                setDrivingData(drivingResult);
 
-                console.log("Driving Licence Documents:", drivingData);
+                console.log("Driving Licence Documents:", drivingResult);
 
                 // Retrieve PAN Card
                 const panResponse = await fetch(
@@ -132,17 +139,17 @@ function Register() {
                     }
                 );
 
-                const panData = await panResponse.json();
+                const panResult = await panResponse.json();
 
                 if (!panResponse.ok) {
                     throw new Error(
-                        panData.message || "Unable to retrieve PAN Card XML."
+                        panResult.message || "Unable to retrieve PAN Card XML."
                     );
                 }
 
-                setPanData(panData);
+                setPanData(panResult);
 
-                console.log("PAN Card XML:", panData.xml);
+                console.log("PAN Card XML:", panResult.xml);
                 console.log("DigiLocker Profile:", data);
 
                 // Remove code and state from URL
@@ -205,6 +212,49 @@ function Register() {
 
     const panDetails = getPanDetails();
 
+    // Email & mobile validation
+    const mobileError = !mobile.trim()
+        ? "Please enter your mobile number."
+        : !/^[6-9]\d{9}$/.test(mobile)
+            ? "Please enter a valid 10-digit mobile number."
+            : "";
+
+    const [mobileChecking, setMobileChecking] = useState(false);
+    const [mobileExists, setMobileExists] = useState(false);
+
+    const checkMobileNoExist = async (mobileNo) => {
+        try {
+            setMobileChecking(true);
+            setMobileExists(false);
+
+            const response = await fetch(
+                `${API_BASE_URL}/api/registrationlogin/checkMobileNoExist?mobileNo=${encodeURIComponent(mobileNo)}`,
+                {
+                    method: "POST"
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.exists === true) {
+                setMobileExists(true);
+            }
+
+        } catch (error) {
+            console.error("Mobile number check failed:", error);
+        } finally {
+            setMobileChecking(false);
+        }
+    };
+
+
+
+    const emailError = !email.trim()
+        ? "Please enter your email address."
+        : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+            ? "Please enter a valid email address."
+            : "";
+
     // Password validation rules
     const passwordRules = {
         length: password.length >= 8 && password.length <= 20,
@@ -228,17 +278,49 @@ function Register() {
             ? "Passwords do not match."
             : "";
 
+    /*const isFormValid =
+        !!digilockerProfile &&
+        !!panDetails.name &&
+        !!panDetails.number &&
+        !!panDetails.dob &&
+        !!panDetails.gender &&
+        !emailError &&
+        !mobileError &&
+        !mobileExists &&
+        !mobileChecking &&
+        passwordValid &&
+        password === confirmPassword &&
+        !!confirmPassword; */
+
+    const isFormValid =
+        !!digilockerProfile &&
+        !!panDetails.name &&
+        !!panDetails.number &&
+        !!panDetails.dob &&
+        !!panDetails.gender &&
+        !mobileError &&
+        !mobileExists &&
+        !mobileChecking &&
+        passwordValid &&
+        password === confirmPassword &&
+        !!confirmPassword;
+
     // Register button
     const handleRegister = (e) => {
 
         e.preventDefault();
 
+        setEmailTouched(true);
         setPasswordTouched(true);
         setConfirmTouched(true);
         setRegisterMessage("");
 
         if (!digilockerProfile) {
             setRegisterMessage("Please complete DigiLocker verification first.");
+            return;
+        }
+
+        if (emailError) {
             return;
         }
 
@@ -255,9 +337,12 @@ function Register() {
             "Details verified successfully. Please connect the registration API to complete account creation."
         );
 
+
+
     };
 
     return (
+
         <div className="register-page">
 
             <Header />
@@ -283,7 +368,7 @@ function Register() {
                             <h3>Continue with DigiLocker</h3>
 
                             <p>
-                                Fetch your verified personal details securely
+                                Fetch your verified PAN Card details securely
                                 from your DigiLocker account.
                             </p>
 
@@ -321,7 +406,7 @@ function Register() {
                                 <div>
                                     <strong>Verification Successful</strong>
                                     <p>
-                                        DigiLocker details retrieved successfully
+                                        DigiLocker verification completed successfully
                                     </p>
                                 </div>
 
@@ -329,98 +414,180 @@ function Register() {
 
                             <form className="dls-form" onSubmit={handleRegister}>
 
-                                {/* Personal Details */}
+                                {/* PAN Card Details */}
                                 <section className="dls-panel">
 
                                     <div className="dls-panel-head">
-
                                         <h3>Personal Details</h3>
 
                                         <span className="dls-tag">
-                                            <i className="fa fa-lock"></i>
-                                            Auto-filled from DigiLocker
+                                            <FiLock className="dls-input-icon" />
+                                            Verified through DigiLocker
                                         </span>
-
                                     </div>
 
-                                    <div className="dls-details dls-details-3">
+                                    <div className="dls-details dls-details-4">
 
-                                        <div className="dls-detail dls-detail-wide">
-                                            <label>Full Name</label>
-                                            <div>{digilockerProfile.name || "Not Available"}</div>
+                                        <div className="dls-detail">
+                                            <label>PAN Holder Name</label>
+                                            <input
+                                                type="text"
+                                                value={panDetails.name || "Not Available"}
+                                                readOnly
+                                            />
                                         </div>
 
                                         <div className="dls-detail">
                                             <label>Date of Birth</label>
-                                            <div>{formatDob(digilockerProfile.dob) || "Not Available"}</div>
+                                            <input
+                                                type="text"
+                                                value={formatDob(panDetails.dob) || "Not Available"}
+                                                readOnly
+                                            />
                                         </div>
 
                                         <div className="dls-detail">
+                                            <label>PAN Number</label>
+                                            <input
+                                                type="text"
+                                                value={panDetails.number || "Not Available"}
+                                                readOnly
+                                            />
+                                        </div>
+
+
+
+                                        <div className="dls-detail">
                                             <label>Gender</label>
-                                            <div>{formatGender(digilockerProfile.gender) || "Not Available"}</div>
+                                            <input
+                                                type="text"
+                                                value={formatGender(panDetails.gender) || "Not Available"}
+                                                readOnly
+                                            />
                                         </div>
 
                                     </div>
 
                                 </section>
 
-                                {/* PAN Details */}
+                                {/* Contact Details */}
+
                                 <section className="dls-panel">
 
                                     <div className="dls-panel-head">
-
-                                        <h3>PAN Card Details</h3>
+                                        <h3>Contact Details</h3>
 
                                         <span className="dls-tag">
-                                            <i className="fa fa-lock"></i>
-                                            Auto-filled from DigiLocker
+                                            <FiEdit />
+                                            Enter manually
                                         </span>
-
                                     </div>
 
-                                    {panData && panData.xml && (
+                                    <div className="dls-contact-details">
 
-                                        <div className="dls-details dls-details-4">
+                                        <div className="dls-field">
 
-                                            <div className="dls-detail dls-detail-wide">
-                                                <label>PAN Holder Name</label>
-                                                <div>{panDetails.name || "Not Available"}</div>
+                                            <label>
+                                                Mobile Number <span>*</span>
+                                            </label>
+
+                                            <div className="dls-input-wrap">
+                                                <FiPhone className="dls-input-icon" />
+
+                                                <input
+                                                    type="tel"
+                                                    value={mobile}
+                                                    maxLength="10"
+                                                    placeholder="Enter 10-digit mobile number"
+                                                    autoComplete="tel"
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                                                        setMobile(value);
+                                                        setMobileExists(false);
+                                                        setRegisterMessage("");
+                                                    }}
+                                                    onBlur={() => {
+                                                        setMobileTouched(true);
+                                                        if (/^[6-9]\d{9}$/.test(mobile)) {
+                                                            checkMobileNoExist(mobile);
+                                                        }
+                                                    }}
+                                                />
                                             </div>
 
-                                            <div className="dls-detail">
-                                                <label>PAN Number</label>
-                                                <div>{panDetails.number || "Not Available"}</div>
-                                            </div>
+                                            {mobileTouched && mobileError && (
+                                                <p className="dls-field-error">{mobileError}</p>
+                                            )}
 
-                                            <div className="dls-detail">
-                                                <label>Date of Birth</label>
-                                                <div>{formatDob(panDetails.dob) || "Not Available"}</div>
-                                            </div>
+                                            {mobileTouched && !mobileError && mobileChecking && (
+                                                <p className="dls-field-error">Checking mobile number...</p>
+                                            )}
 
-                                            <div className="dls-detail">
-                                                <label>Gender</label>
-                                                <div>{formatGender(panDetails.gender) || "Not Available"}</div>
-                                            </div>
+                                            {mobileTouched && !mobileError && !mobileChecking && mobileExists && (
+                                                <p className="dls-field-error">
+                                                    The mobile number is already registered.
+                                                </p>
+                                            )}
 
                                         </div>
 
-                                    )}
+                                        {/*<div className="dls-field">
 
-                                    {/* Password Section */}
+                                            <label>
+                                                Email Address <span>*</span>
+                                            </label>
+
+                                            <div className="dls-input-wrap">
+                                                <i className="fa fa-envelope"></i>
+
+                                                <input
+                                                    type="email"
+                                                    value={email}
+                                                    placeholder="Enter your email address"
+                                                    autoComplete="email"
+                                                    onChange={(e) => {
+                                                        setEmail(e.target.value);
+                                                        setRegisterMessage("");
+                                                    }}
+                                                    onBlur={() => setEmailTouched(true)}
+                                                />
+                                            </div>
+
+                                            {emailTouched && emailError && (
+                                                <p className="dls-field-error">{emailError}</p>
+                                            )}
+
+                                        </div>*/}
+
+                                    </div>
+
+                                </section>
+
+                                {/* Password Section */}
+                                <section className="dls-panel">
+
+                                    <div className="dls-panel-head">
+                                        <h3>Create Login Password</h3>
+                                    </div>
+
                                     <div className="dls-password-section">
 
-                                        <h4>Create a password to log in to the portal</h4>
+                                        <h4>
+                                            Create a password to log in to the portal
+                                        </h4>
 
                                         <div className="dls-password-grid">
 
                                             {/* Password */}
                                             <div className="dls-field">
 
-                                                <label>Password <span>*</span></label>
+                                                <label>
+                                                    Password <span>*</span>
+                                                </label>
 
                                                 <div className="dls-input-wrap">
 
-                                                    <i className="fa fa-lock"></i>
+                                                   <FiLock className="dls-input-icon" />
 
                                                     <input
                                                         type={showPassword ? "text" : "password"}
@@ -441,13 +608,31 @@ function Register() {
                                                         onClick={() => setShowPassword(!showPassword)}
                                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                                     >
-                                                        <i className={showPassword ? "fa fa-eye-slash" : "fa fa-eye"}></i>
+                                                        {showPassword ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M3 3l18 18" />
+                                                                <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
+                                                                <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.9c5 0 9 4.5 10 7.1a11.8 11.8 0 0 1-3.1 4.3" />
+                                                                <path d="M6.6 6.6A12.5 12.5 0 0 0 2 12c1 2.6 5 7.1 10 7.1a10.8 10.8 0 0 0 4-.8" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                                                                <circle cx="12" cy="12" r="3" />
+                                                            </svg>
+                                                        )}
                                                     </button>
 
                                                 </div>
 
                                                 {passwordTouched && passwordError && (
-                                                    <p className="dls-field-error">{passwordError}</p>
+                                                    <p className="dls-field-error">
+                                                        {passwordError}
+                                                    </p>
                                                 )}
 
                                             </div>
@@ -455,11 +640,13 @@ function Register() {
                                             {/* Confirm Password */}
                                             <div className="dls-field">
 
-                                                <label>Confirm Password <span>*</span></label>
+                                                <label>
+                                                    Confirm Password <span>*</span>
+                                                </label>
 
                                                 <div className="dls-input-wrap">
 
-                                                    <i className="fa fa-lock"></i>
+                                                    <FiLock className="dls-input-icon" />
 
                                                     <input
                                                         type={showConfirmPassword ? "text" : "password"}
@@ -480,13 +667,31 @@ function Register() {
                                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                                         aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                                                     >
-                                                        <i className={showConfirmPassword ? "fa fa-eye-slash" : "fa fa-eye"}></i>
+                                                        {showConfirmPassword ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M3 3l18 18" />
+                                                                <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
+                                                                <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.9c5 0 9 4.5 10 7.1a11.8 11.8 0 0 1-3.1 4.3" />
+                                                                <path d="M6.6 6.6A12.5 12.5 0 0 0 2 12c1 2.6 5 7.1 10 7.1a10.8 10.8 0 0 0 4-.8" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                                                                <circle cx="12" cy="12" r="3" />
+                                                            </svg>
+                                                        )}
                                                     </button>
 
                                                 </div>
 
                                                 {confirmTouched && confirmError && (
-                                                    <p className="dls-field-error">{confirmError}</p>
+                                                    <p className="dls-field-error">
+                                                        {confirmError}
+                                                    </p>
                                                 )}
 
                                             </div>
@@ -524,44 +729,42 @@ function Register() {
 
                                 {/* Registration Message */}
                                 {registerMessage && (
-
                                     <div className="dls-message">
                                         {registerMessage}
                                     </div>
-
                                 )}
 
                                 {/* Register Button */}
                                 <div className="dls-action">
 
                                     <p>
-                                        Please check the details above.
+                                        Please check your details above.
                                         Click <strong>Register</strong> to complete your registration.
                                     </p>
 
-									<button
-									    type="submit"
-									    className="dls-register-btn"
-									>
-									    <svg
-									        xmlns="http://www.w3.org/2000/svg"
-									        width="20"
-									        height="20"
-									        viewBox="0 0 24 24"
-									        fill="none"
-									        stroke="currentColor"
-									        strokeWidth="2"
-									        strokeLinecap="round"
-									        strokeLinejoin="round"
-									    >
-									        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-									        <circle cx="10" cy="7" r="4" />
-									        <line x1="19" y1="8" x2="19" y2="14" />
-									        <line x1="22" y1="11" x2="16" y2="11" />
-									    </svg>
-
-									    Register
-									</button>
+                                    <button
+                                        type="submit"
+                                        className="dls-register-btn"
+                                        disabled={!isFormValid}
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                            <circle cx="10" cy="7" r="4" />
+                                            <line x1="19" y1="8" x2="19" y2="14" />
+                                            <line x1="22" y1="11" x2="16" y2="11" />
+                                        </svg>
+                                        Register
+                                    </button>
 
                                 </div>
 
@@ -578,6 +781,7 @@ function Register() {
             <Footer />
 
         </div>
+
     );
 
 }
