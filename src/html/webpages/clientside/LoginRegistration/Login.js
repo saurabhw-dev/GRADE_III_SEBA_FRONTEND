@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../HeaderFooter/Header';   // adjust the path if your folders differ
 import Footer from '../HeaderFooter/Footer';
 import API_BASE_URL from '../../../../apiConfig';
@@ -8,40 +9,40 @@ import API_BASE_URL from '../../../../apiConfig';
 =================================================================== */
 const S = 'stroke';
 const ICONS = {
-  'i-login': [S, <><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5M15 12H3" /></>],
-  'i-id': [S, <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="M15 10h3M15 14h3M6 16c.6-1.4 1.7-2 3-2s2.4.6 3 2" /></>],
-  'i-lock': [S, <><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>],
-  'i-eye': [S, <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>],
-  'i-eye-off': [S, <><path d="M3 3l18 18" /><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 7.6C3.9 9.3 2 12 2 12s3.6 6 10 6a9.7 9.7 0 0 0 4-.9" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></>],
-  'i-shield': [S, <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>],
-  'i-refresh': [S, <><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></>],
-  'i-alert': [S, <><circle cx="12" cy="12" r="10" /><path d="M12 8v5M12 16h.01" /></>],
-  'i-warn': [S, <><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></>],
-  'i-user-plus': [S, <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></>],
-  'i-book': [S, <><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6.5A2.5 2.5 0 0 0 4 21.5 2.5 2.5 0 0 0 6.5 24" /><path d="M8 7h8M8 11h6" /></>],
-  'i-help': [S, <><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>],
-  'i-phone': [S, <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" />],
-  'i-chev-right': [S, <path d="m9 18 6-6-6-6" />, 2.4],
+    'i-login': [S, <><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5M15 12H3" /></>],
+    'i-id': [S, <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="M15 10h3M15 14h3M6 16c.6-1.4 1.7-2 3-2s2.4.6 3 2" /></>],
+    'i-lock': [S, <><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>],
+    'i-eye': [S, <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>],
+    'i-eye-off': [S, <><path d="M3 3l18 18" /><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 7.6C3.9 9.3 2 12 2 12s3.6 6 10 6a9.7 9.7 0 0 0 4-.9" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></>],
+    'i-shield': [S, <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>],
+    'i-refresh': [S, <><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></>],
+    'i-alert': [S, <><circle cx="12" cy="12" r="10" /><path d="M12 8v5M12 16h.01" /></>],
+    'i-warn': [S, <><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></>],
+    'i-user-plus': [S, <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></>],
+    'i-book': [S, <><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6.5A2.5 2.5 0 0 0 4 21.5 2.5 2.5 0 0 0 6.5 24" /><path d="M8 7h8M8 11h6" /></>],
+    'i-help': [S, <><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>],
+    'i-phone': [S, <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" />],
+    'i-chev-right': [S, <path d="m9 18 6-6-6-6" />, 2.4],
 };
 
 function Icon({ name, className }) {
-  const entry = ICONS[name];
-  if (!entry) return null;
-  const [, node, width] = entry;
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={width || 2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {node}
-    </svg>
-  );
+    const entry = ICONS[name];
+    if (!entry) return null;
+    const [, node, width] = entry;
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={width || 2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            {node}
+        </svg>
+    );
 }
 
 /* ===================================================================
@@ -407,476 +408,498 @@ const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I look-
      action      – form action URL for a normal POST (default "").
 =================================================================== */
 function Login({ serverError = '', onLogin, action = '' }) {
-  const [applicationNo, setApplicationNo] = useState('');
-  const [password, setPassword] = useState('');
-  const [captcha, setCaptcha] = useState('');
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [capsLock, setCapsLock] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [disableLogin, setDisableLogin] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [alertType, setAlertType] = useState('');
-  const [refreshSpin, setRefreshSpin] = useState(false);
-  const [captchaError, setCaptchaError] = useState('Please enter the captcha.');
-  const [errors, setErrors] = useState({ applicationNo: false, password: false, captcha: false });
+    const location = useLocation();
+	const navigate = useNavigate();
+    useEffect(() => {
 
-  const canvasRef = useRef(null);
-  const appNoRef = useRef(null);
-  const passwordRef = useRef(null);
-  const captchaInputRef = useRef(null);
-  const captchaCodeRef = useRef('');
+        if (location.state && location.state.message) {
 
-  /* ---------- captcha (PROTOTYPE – the server must verify it in production) ---------- */
-  const drawCaptcha = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const w = 116;
-    const h = 40;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const rnd = (a, b) => a + Math.random() * (b - a);
+            setAlertType(location.state.alertType);
+            setLoginError(location.state.message);
+            setShowAlert(true);
 
-    ctx.fillStyle = '#eef3fa';
-    ctx.fillRect(0, 0, w, h);
+            navigate(location.pathname, { replace: true, state: null });
+        }
 
-    for (let i = 0; i < 5; i++) {
-      ctx.strokeStyle = `rgba(29,67,120,${rnd(0.15, 0.35)})`;
-      ctx.lineWidth = rnd(0.8, 1.6);
-      ctx.beginPath();
-      ctx.moveTo(rnd(0, w), rnd(0, h));
-      ctx.lineTo(rnd(0, w), rnd(0, h));
-      ctx.stroke();
-    }
+    }, [location, navigate]);
+    
+    const [applicationNo, setApplicationNo] = useState('');
+    const [password, setPassword] = useState('');
+    const [captcha, setCaptcha] = useState('');
 
-    let code = '';
-    for (let j = 0; j < 5; j++) {
-      const ch = CAPTCHA_CHARS.charAt(Math.floor(Math.random() * CAPTCHA_CHARS.length));
-      code += ch;
-      ctx.save();
-      ctx.translate(13 + j * 21.5, h / 2 + rnd(-3, 3));
-      ctx.rotate(rnd(-0.35, 0.35));
-      ctx.font = `700 ${Math.round(rnd(18, 22))}px 'Segoe UI', Arial, sans-serif`;
-      ctx.fillStyle = ['#0c2340', '#13315c', '#1d4378', '#d97706'][Math.floor(Math.random() * 4)];
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = 'center';
-      ctx.fillText(ch, 0, 0);
-      ctx.restore();
-    }
-    captchaCodeRef.current = code;
+    const [showPassword, setShowPassword] = useState(false);
+    const [capsLock, setCapsLock] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [disableLogin, setDisableLogin] = useState(false);
+    const [loginError, setLoginError] = useState('');
+    const [alertType, setAlertType] = useState('');
+    const [refreshSpin, setRefreshSpin] = useState(false);
+    const [captchaError, setCaptchaError] = useState('Please enter the captcha.');
+    const [errors, setErrors] = useState({ applicationNo: false, password: false, captcha: false });
 
-    for (let k = 0; k < 30; k++) {
-      ctx.fillStyle = `rgba(19,49,92,${rnd(0.15, 0.4)})`;
-      ctx.fillRect(rnd(0, w), rnd(0, h), 1.5, 1.5);
-    }
-  }, []);
+    const canvasRef = useRef(null);
+    const appNoRef = useRef(null);
+    const passwordRef = useRef(null);
+    const captchaInputRef = useRef(null);
+    const captchaCodeRef = useRef('');
 
-  /* ---------- start-up ---------- */
-  useEffect(() => {
-    drawCaptcha();
+    /* ---------- captcha (PROTOTYPE – the server must verify it in production) ---------- */
+    const drawCaptcha = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const w = 116;
+        const h = 40;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const rnd = (a, b) => a + Math.random() * (b - a);
 
-    // desktop only: put the cursor in the first field (no keyboard pop-up on phones)
-    if (window.matchMedia && window.matchMedia('(pointer:fine)').matches && appNoRef.current) {
-      appNoRef.current.focus({ preventScroll: true });
-    }
+        ctx.fillStyle = '#eef3fa';
+        ctx.fillRect(0, 0, w, h);
 
-    // returning with the browser Back button: reset button + captcha
-    const onPageShow = () => {
-      setLoading(false);
-      setDisableLogin(false);
-      setCaptcha('');
-      drawCaptcha();
+        for (let i = 0;i < 5;i++) {
+            ctx.strokeStyle = `rgba(29,67,120,${rnd(0.15, 0.35)})`;
+            ctx.lineWidth = rnd(0.8, 1.6);
+            ctx.beginPath();
+            ctx.moveTo(rnd(0, w), rnd(0, h));
+            ctx.lineTo(rnd(0, w), rnd(0, h));
+            ctx.stroke();
+        }
+
+        let code = '';
+        for (let j = 0;j < 5;j++) {
+            const ch = CAPTCHA_CHARS.charAt(Math.floor(Math.random() * CAPTCHA_CHARS.length));
+            code += ch;
+            ctx.save();
+            ctx.translate(13 + j * 21.5, h / 2 + rnd(-3, 3));
+            ctx.rotate(rnd(-0.35, 0.35));
+            ctx.font = `700 ${Math.round(rnd(18, 22))}px 'Segoe UI', Arial, sans-serif`;
+            ctx.fillStyle = ['#0c2340', '#13315c', '#1d4378', '#d97706'][Math.floor(Math.random() * 4)];
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.fillText(ch, 0, 0);
+            ctx.restore();
+        }
+        captchaCodeRef.current = code;
+
+        for (let k = 0;k < 30;k++) {
+            ctx.fillStyle = `rgba(19,49,92,${rnd(0.15, 0.4)})`;
+            ctx.fillRect(rnd(0, w), rnd(0, h), 1.5, 1.5);
+        }
+    }, []);
+
+    /* ---------- start-up ---------- */
+    useEffect(() => {
+        drawCaptcha();
+
+        // desktop only: put the cursor in the first field (no keyboard pop-up on phones)
+        if (window.matchMedia && window.matchMedia('(pointer:fine)').matches && appNoRef.current) {
+            appNoRef.current.focus({ preventScroll: true });
+        }
+
+        // returning with the browser Back button: reset button + captcha
+        const onPageShow = () => {
+            setLoading(false);
+            setDisableLogin(false);
+            setCaptcha('');
+            drawCaptcha();
+        };
+        window.addEventListener('pageshow', onPageShow);
+        return () => window.removeEventListener('pageshow', onPageShow);
+    }, [drawCaptcha]);
+
+    /* ---------- handlers ---------- */
+    const clearError = (name, value) => {
+        if (value.trim() !== '') setErrors((p) => ({ ...p, [name]: false }));
     };
-    window.addEventListener('pageshow', onPageShow);
-    return () => window.removeEventListener('pageshow', onPageShow);
-  }, [drawCaptcha]);
 
-  /* ---------- handlers ---------- */
-  const clearError = (name, value) => {
-    if (value.trim() !== '') setErrors((p) => ({ ...p, [name]: false }));
-  };
+    const refreshCaptcha = () => {
+        drawCaptcha();
+        setCaptcha('');
+        setRefreshSpin((p) => !p);
+        setErrors((p) => ({ ...p, captcha: false }));
+        if (captchaInputRef.current) captchaInputRef.current.focus();
+    };
 
-  const refreshCaptcha = () => {
-    drawCaptcha();
-    setCaptcha('');
-    setRefreshSpin((p) => !p);
-    setErrors((p) => ({ ...p, captcha: false }));
-    if (captchaInputRef.current) captchaInputRef.current.focus();
-  };
-
-  const checkCaps = (e) => {
-    if (e.getModifierState) setCapsLock(e.getModifierState('CapsLock'));
-  };
+    const checkCaps = (e) => {
+        if (e.getModifierState) setCapsLock(e.getModifierState('CapsLock'));
+    };
 
 
-  const handleSubmit = async (e) => {
-	 console.log("login called");
-      e.preventDefault();
+    const handleSubmit = async (e) => {
+        console.log("login called");
+        e.preventDefault();
 
-      const bad = {
-          applicationNo: applicationNo.trim() === '',
-          password: password.trim() === '',
-          captcha: captcha.trim() === ''
-      };
+        const bad = {
+            applicationNo: applicationNo.trim() === '',
+            password: password.trim() === '',
+            captcha: captcha.trim() === ''
+        };
 
-      setCaptchaError('Please enter the captcha.');
-      setErrors(bad);
+        setCaptchaError('Please enter the captcha.');
+        setErrors(bad);
 
-      // 1. Empty-field validation
-      if (bad.applicationNo || bad.password || bad.captcha) {
+        // 1. Empty-field validation
+        if (bad.applicationNo || bad.password || bad.captcha) {
 
-          if (bad.applicationNo && appNoRef.current)
-              appNoRef.current.focus();
+            if (bad.applicationNo && appNoRef.current)
+                appNoRef.current.focus();
 
-          else if (bad.password && passwordRef.current)
-              passwordRef.current.focus();
+            else if (bad.password && passwordRef.current)
+                passwordRef.current.focus();
 
-          else if (captchaInputRef.current)
-              captchaInputRef.current.focus();
+            else if (captchaInputRef.current)
+                captchaInputRef.current.focus();
 
-          return;
-      }
+            return;
+        }
 
-      // 2. Captcha validation (prototype only)
-      if (captcha.trim().toUpperCase() !== captchaCodeRef.current) {
+        // 2. Captcha validation (prototype only)
+        if (captcha.trim().toUpperCase() !== captchaCodeRef.current) {
 
-          setCaptchaError('Captcha does not match. Please try the new one.');
+            setCaptchaError('Captcha does not match. Please try the new one.');
 
-          setErrors((p) => ({
-              ...p,
-              captcha: true
-          }));
+            setErrors((p) => ({
+                ...p,
+                captcha: true
+            }));
 
-          drawCaptcha();
-          setCaptcha('');
+            drawCaptcha();
+            setCaptcha('');
 
-          if (captchaInputRef.current)
-              captchaInputRef.current.focus();
+            if (captchaInputRef.current)
+                captchaInputRef.current.focus();
 
-          return;
-      }
+            return;
+        }
 
-      // 3. Login API call
-      try {
+        // 3. Login API call
+        try {
 
-          setLoading(true);
-          setDisableLogin(true);
-          setLoginError('');
+            setLoading(true);
+            setDisableLogin(true);
+            setLoginError('');
 
-          const response = await fetch(`${API_BASE_URL}/api/registrationlogin/checkLogin`, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                  applicationNo: applicationNo.trim(),
-                  password: password,
-                  captcha: captcha.trim()
-              })
-          });
+            const response = await fetch(`${API_BASE_URL}/api/registrationlogin/checkLogin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    applicationNo: applicationNo.trim(),
+                    password: password,
+                    captcha: captcha.trim()
+                })
+            });
 
-          const data = await response.json();
+            const data = await response.json();
 
-		  if (response.ok && data.success) {
+            if (response.ok && data.success) {
+                // Store JWT Token
+                sessionStorage.setItem("token", data.token);
+                setAlertType('success');
+                setLoginError(data.message || 'Login successful!');
+                setShowAlert(true);
 
-		      setAlertType('success');
-		      setLoginError(data.message || 'Login successful!');
-			  setShowAlert(true);
-		      console.log('Login successful:', data);
+                console.log('Login successful:', data);
 
-		  } else {
+                setTimeout(() => {
+                    navigate('/slrc/dashboard');
+                }, 1000);
 
-		      setAlertType('error');
-		      setLoginError(data.message || 'Invalid Application No. / Mobile No. or Password.');
-			  setShowAlert(true);
+            } else {
 
-		  }
+                setAlertType('error');
+                setLoginError(data.message || 'Invalid Application No. / Mobile No. or Password.');
+                setShowAlert(true);
 
-		  } catch (error) {
+            }
 
-		      console.error('Login error:', error);
-		
-		      setAlertType('error');
-		      setLoginError('Unable to connect to server. Please try again.');
-			  setShowAlert(true);
+        } catch (error) {
 
-		  } finally {
+            console.error('Login error:', error);
 
-		      setLoading(false);
-		      setDisableLogin(false);
+            setAlertType('error');
+            setLoginError('Unable to connect to server. Please try again.');
+            setShowAlert(true);
 
-		  }
+        } finally {
 
-  };
-  
-  const [showAlert, setShowAlert] = useState(false);
-  useEffect(() => {
+            setLoading(false);
+            setDisableLogin(false);
 
-      if (showAlert) {
+        }
 
-          const timer = setTimeout(() => {
-              setShowAlert(false);
-              setLoginError('');
-              setAlertType('');
-          }, 1000);
+    };
 
-          return () => clearTimeout(timer);
-      }
+    const [showAlert, setShowAlert] = useState(false);
+    useEffect(() => {
 
-  }, [showAlert]);
+        if (showAlert) {
 
-  return (
-    <>
-      <Header />
+            const timer = setTimeout(() => {
+                setShowAlert(false);
+                setLoginError('');
+                setAlertType('');
+            }, 2000);
 
-      <div className="seba-app">
-      <style>{BASE_CSS}</style>
-      <style>{LOGIN_CSS}</style>
+            return () => clearTimeout(timer);
+        }
 
-      <main className="login-page" id="main" tabIndex={-1}>
-        <div className="login-wrap">
+    }, [showAlert]);
 
-          <div className="login-card" id="loginCard">
+    return (
+        <>
+            <Header />
 
-            {/* ===================== LEFT: LOGIN FORM ===================== */}
-            <section className="login-main" aria-labelledby="loginHeading">
-              <div className="login-head">
-                <h1 id="loginHeading"><Icon name="i-login" />LOGIN</h1>
-                <span className="login-head__tag">Candidate Login</span>
-              </div>
+            <div className="seba-app">
+                <style>{BASE_CSS}</style>
+                <style>{LOGIN_CSS}</style>
 
-              <form
-                className="login-form"
-                id="loginForm"
-                action={action}
-                method="post"
-                noValidate
-                autoComplete="on"
-                onSubmit={handleSubmit}
-              >
-                {/* server error message */}
-                <div className="alert alert--error" role="alert" hidden={!serverError}>
-                  <Icon name="i-alert" />
-                  <div>
-                    <strong>Login failed</strong>
-                    <span>{serverError || 'Please check your Application No and Password.'}</span>
-                  </div>
-                </div>
+                <main className="login-page" id="main" tabIndex={-1}>
+                    <div className="login-wrap">
 
-                <div className="form-row">
+                        <div className="login-card" id="loginCard">
 
-                  {/* ---------- Application No ---------- */}
-				  <div className={`field ${errors.applicationNo ? 'is-invalid' : ''}`}>
-				      <label htmlFor="applicationNo">Application No. / Mobile No.</label>
+                            {/* ===================== LEFT: LOGIN FORM ===================== */}
+                            <section className="login-main" aria-labelledby="loginHeading">
+                                <div className="login-head">
+                                    <h1 id="loginHeading"><Icon name="i-login" />LOGIN</h1>
+                                    <span className="login-head__tag">Candidate Login</span>
+                                </div>
 
-				      <div className="field__control">
-				          <input
-				              ref={appNoRef}
-				              className="input"
-				              type="text"
-				              id="applicationNo"
-				              name="application_no"
-				              placeholder="APPLICATION NO. / MOBILE NO."
-				              autoComplete="off"
-				              spellCheck={false}
-				              autoCapitalize="characters"
-				              required
-				              aria-describedby="appNoError"
-				              aria-invalid={!!errors.applicationNo}
-				              value={applicationNo}
-				              onChange={(e) => {
-				                  setApplicationNo(e.target.value);
-				                  clearError('applicationNo', e.target.value);
-				              }}
-				          />
+                                <form
+                                    className="login-form"
+                                    id="loginForm"
+                                    action={action}
+                                    method="post"
+                                    noValidate
+                                    autoComplete="on"
+                                    onSubmit={handleSubmit}
+                                >
+                                    {/* server error message */}
+                                    <div className="alert alert--error" role="alert" hidden={!serverError}>
+                                        <Icon name="i-alert" />
+                                        <div>
+                                            <strong>Login failed</strong>
+                                            <span>{serverError || 'Please check your Application No and Password.'}</span>
+                                        </div>
+                                    </div>
 
-				          <Icon name="i-id" className="field__icon" />
-				      </div>
+                                    <div className="form-row">
 
-				      <p className="field__error" id="appNoError">
-				          <Icon name="i-alert" />
-				          <span>Please enter your Application No. or Mobile No.</span>
-				      </p>
-				  </div>
+                                        {/* ---------- Application No ---------- */}
+                                        <div className={`field ${errors.applicationNo ? 'is-invalid' : ''}`}>
+                                            <label htmlFor="applicationNo">Application No. / Mobile No.</label>
 
-                  {/* ---------- Password ---------- */}
-                  <div className={`field field--password ${errors.password ? 'is-invalid' : ''}`}>
-                    <div className="field__top">
-                      <label htmlFor="password">Password</label>
-                      {/* TODO: put the real "Forgot password?" URL here */}
-                      <a className="forgot" href="/forgot-password">Forgot password?</a>
+                                            <div className="field__control">
+                                                <input
+                                                    ref={appNoRef}
+                                                    className="input"
+                                                    type="text"
+                                                    id="applicationNo"
+                                                    name="application_no"
+                                                    placeholder="APPLICATION NO. / MOBILE NO."
+                                                    autoComplete="off"
+                                                    spellCheck={false}
+                                                    autoCapitalize="characters"
+                                                    required
+                                                    aria-describedby="appNoError"
+                                                    aria-invalid={!!errors.applicationNo}
+                                                    value={applicationNo}
+                                                    onChange={(e) => {
+                                                        setApplicationNo(e.target.value);
+                                                        clearError('applicationNo', e.target.value);
+                                                    }}
+                                                />
+
+                                                <Icon name="i-id" className="field__icon" />
+                                            </div>
+
+                                            <p className="field__error" id="appNoError">
+                                                <Icon name="i-alert" />
+                                                <span>Please enter your Application No. or Mobile No.</span>
+                                            </p>
+                                        </div>
+
+                                        {/* ---------- Password ---------- */}
+                                        <div className={`field field--password ${errors.password ? 'is-invalid' : ''}`}>
+                                            <div className="field__top">
+                                                <label htmlFor="password">Password</label>
+                                                {/* TODO: put the real "Forgot password?" URL here */}
+                                                <a className="forgot" href="/forgot-password">Forgot password?</a>
+                                            </div>
+                                            <div className="field__control">
+                                                <input
+                                                    ref={passwordRef}
+                                                    className="input"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    id="password"
+                                                    name="password"
+                                                    placeholder="PASSWORD"
+                                                    autoComplete="current-password"
+                                                    required
+                                                    aria-describedby="pwError capsWarn"
+                                                    aria-invalid={errors.password}
+                                                    value={password}
+                                                    onChange={(e) => { setPassword(e.target.value); clearError('password', e.target.value); }}
+                                                    onKeyDown={checkCaps}
+                                                    onKeyUp={checkCaps}
+                                                    onBlur={() => setCapsLock(false)}
+                                                />
+                                                <Icon name="i-lock" className="field__icon" />
+                                                <button
+                                                    className="pw-toggle"
+                                                    type="button"
+                                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                    aria-pressed={showPassword}
+                                                    onClick={() => {
+                                                        setShowPassword((p) => !p);
+                                                        if (passwordRef.current) passwordRef.current.focus();
+                                                    }}
+                                                >
+                                                    <Icon name={showPassword ? 'i-eye-off' : 'i-eye'} />
+                                                </button>
+                                            </div>
+                                            <p className="field__error" id="pwError">
+                                                <Icon name="i-alert" /><span>Please enter your Password.</span>
+                                            </p>
+                                            <p className={`caps-warn ${capsLock ? 'is-visible' : ''}`} id="capsWarn" aria-live="polite">
+                                                <Icon name="i-warn" /><span>Caps Lock is on</span>
+                                            </p>
+                                        </div>
+
+                                    </div>
+
+                                    {/* ---------- Captcha ---------- */}
+                                    <div className={`field ${errors.captcha ? 'is-invalid' : ''}`}>
+                                        <label htmlFor="captcha">Captcha</label>
+                                        <div className="captcha">
+                                            <div className="captcha__box">
+                                                <canvas
+                                                    ref={canvasRef}
+                                                    width="116"
+                                                    height="40"
+                                                    role="img"
+                                                    aria-label="Captcha image. Use refresh for a new one."
+                                                />
+                                                <button
+                                                    className={`captcha__refresh ${refreshSpin ? 'is-spinning' : ''}`}
+                                                    type="button"
+                                                    aria-label="Get a new captcha"
+                                                    onClick={refreshCaptcha}
+                                                >
+                                                    <Icon name="i-refresh" />
+                                                </button>
+                                            </div>
+                                            <div className="field__control">
+                                                <input
+                                                    ref={captchaInputRef}
+                                                    className="input"
+                                                    type="text"
+                                                    id="captcha"
+                                                    name="captcha"
+                                                    placeholder="Enter captcha"
+                                                    autoComplete="off"
+                                                    autoCapitalize="characters"
+                                                    spellCheck={false}
+                                                    maxLength={6}
+                                                    required
+                                                    aria-describedby="captchaError"
+                                                    aria-invalid={errors.captcha}
+                                                    value={captcha}
+                                                    onChange={(e) => { setCaptcha(e.target.value); clearError('captcha', e.target.value); }}
+                                                />
+                                                <Icon name="i-shield" className="field__icon" />
+                                            </div>
+                                        </div>
+                                        <p className="field__error" id="captchaError">
+                                            <Icon name="i-alert" /><span>{captchaError}</span>
+                                        </p>
+                                    </div>
+
+                                    {/* ---------- Login button ---------- */}
+                                    <button
+                                        type="submit"
+                                        className={`btn btn--primary btn--block ${loading ? 'is-loading' : ''}`}
+                                        disabled={disableLogin}
+                                        aria-busy={loading}
+                                    >
+                                        <span className="spinner" aria-hidden="true" />
+                                        <Icon name="i-login" className="btn__icon" />
+                                        <span className="btn__label">{loading ? 'Logging in…' : 'Login'}</span>
+                                    </button>
+
+                                    {/* ---------- Sign up ---------- */}
+                                    <div className="signup">
+                                        <p><strong>New candidate?</strong> Not registered yet? Sign up to apply.</p>
+                                        <a className="btn btn--secondary btn--sm" href="/slrc/register">
+                                            <Icon name="i-user-plus" />Sign Up
+                                        </a>
+                                    </div>
+                                </form>
+                            </section>
+
+                            {/* ===================== RIGHT: HELP PANEL ===================== */}
+                            <aside className="login-aside" aria-label="How to log in">
+                                <h2>How to log in</h2>
+                                <ol>
+                                    <li>Enter your Application No</li>
+                                    <li>Enter your Password and the captcha</li>
+                                    <li>Click Login to continue</li>
+                                </ol>
+                                <div className="login-aside__help">
+                                    <p>Need help?</p>
+                                    <a href="/instructions"><Icon name="i-book" />Instructions<Icon name="i-chev-right" /></a>
+                                    <a href="/faq"><Icon name="i-help" />Frequently Asked Questions<Icon name="i-chev-right" /></a>
+                                    <a href="/contact"><Icon name="i-phone" />Contact Us<Icon name="i-chev-right" /></a>
+                                </div>
+                            </aside>
+                        </div>
+
+                        <p className="secure-note">
+                            <Icon name="i-shield" />Never share your password with anyone.
+                        </p>
                     </div>
-                    <div className="field__control">
-                      <input
-                        ref={passwordRef}
-                        className="input"
-                        type={showPassword ? 'text' : 'password'}
-                        id="password"
-                        name="password"
-                        placeholder="PASSWORD"
-                        autoComplete="current-password"
-                        required
-                        aria-describedby="pwError capsWarn"
-                        aria-invalid={errors.password}
-                        value={password}
-                        onChange={(e) => { setPassword(e.target.value); clearError('password', e.target.value); }}
-                        onKeyDown={checkCaps}
-                        onKeyUp={checkCaps}
-                        onBlur={() => setCapsLock(false)}
-                      />
-                      <Icon name="i-lock" className="field__icon" />
-                      <button
-                        className="pw-toggle"
+                </main>
+            </div>
+            {showAlert && loginError && (
+                <div className={`custom-alert custom-alert--${alertType}`} role="alert">
+
+                    <div className="custom-alert__icon">
+                        <Icon name={alertType === 'success' ? 'i-check-circle' : 'i-alert'} />
+                    </div>
+
+                    <div className="custom-alert__content">
+                        <strong>
+                            {alertType === 'success' ? 'Success!' : 'Login Failed!'}
+                        </strong>
+
+                        <span>{loginError}</span>
+                    </div>
+
+                    <button
                         type="button"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        aria-pressed={showPassword}
+                        className="custom-alert__close"
                         onClick={() => {
-                          setShowPassword((p) => !p);
-                          if (passwordRef.current) passwordRef.current.focus();
+                            setShowAlert(false);
+                            setLoginError('');
+                            setAlertType('');
                         }}
-                      >
-                        <Icon name={showPassword ? 'i-eye-off' : 'i-eye'} />
-                      </button>
-                    </div>
-                    <p className="field__error" id="pwError">
-                      <Icon name="i-alert" /><span>Please enter your Password.</span>
-                    </p>
-                    <p className={`caps-warn ${capsLock ? 'is-visible' : ''}`} id="capsWarn" aria-live="polite">
-                      <Icon name="i-warn" /><span>Caps Lock is on</span>
-                    </p>
-                  </div>
+                        aria-label="Close alert"
+                    >
+                        <Icon name="i-x" />
+                    </button>
 
                 </div>
-
-                {/* ---------- Captcha ---------- */}
-                <div className={`field ${errors.captcha ? 'is-invalid' : ''}`}>
-                  <label htmlFor="captcha">Captcha</label>
-                  <div className="captcha">
-                    <div className="captcha__box">
-                      <canvas
-                        ref={canvasRef}
-                        width="116"
-                        height="40"
-                        role="img"
-                        aria-label="Captcha image. Use refresh for a new one."
-                      />
-                      <button
-                        className={`captcha__refresh ${refreshSpin ? 'is-spinning' : ''}`}
-                        type="button"
-                        aria-label="Get a new captcha"
-                        onClick={refreshCaptcha}
-                      >
-                        <Icon name="i-refresh" />
-                      </button>
-                    </div>
-                    <div className="field__control">
-                      <input
-                        ref={captchaInputRef}
-                        className="input"
-                        type="text"
-                        id="captcha"
-                        name="captcha"
-                        placeholder="Enter captcha"
-                        autoComplete="off"
-                        autoCapitalize="characters"
-                        spellCheck={false}
-                        maxLength={6}
-                        required
-                        aria-describedby="captchaError"
-                        aria-invalid={errors.captcha}
-                        value={captcha}
-                        onChange={(e) => { setCaptcha(e.target.value); clearError('captcha', e.target.value); }}
-                      />
-                      <Icon name="i-shield" className="field__icon" />
-                    </div>
-                  </div>
-                  <p className="field__error" id="captchaError">
-                    <Icon name="i-alert" /><span>{captchaError}</span>
-                  </p>
-                </div>
-
-                {/* ---------- Login button ---------- */}
-                <button
-                  type="submit"
-                  className={`btn btn--primary btn--block ${loading ? 'is-loading' : ''}`}
-                  disabled={disableLogin}
-                  aria-busy={loading}
-                >
-                  <span className="spinner" aria-hidden="true" />
-                  <Icon name="i-login" className="btn__icon" />
-                  <span className="btn__label">{loading ? 'Logging in…' : 'Login'}</span>
-                </button>
-
-                {/* ---------- Sign up ---------- */}
-                <div className="signup">
-                  <p><strong>New candidate?</strong> Not registered yet? Sign up to apply.</p>
-                  <a className="btn btn--secondary btn--sm" href="/slrc/register">
-                    <Icon name="i-user-plus" />Sign Up
-                  </a>
-                </div>
-              </form>
-            </section>
-
-            {/* ===================== RIGHT: HELP PANEL ===================== */}
-            <aside className="login-aside" aria-label="How to log in">
-              <h2>How to log in</h2>
-              <ol>
-                <li>Enter your Application No</li>
-                <li>Enter your Password and the captcha</li>
-                <li>Click Login to continue</li>
-              </ol>
-              <div className="login-aside__help">
-                <p>Need help?</p>
-                <a href="/instructions"><Icon name="i-book" />Instructions<Icon name="i-chev-right" /></a>
-                <a href="/faq"><Icon name="i-help" />Frequently Asked Questions<Icon name="i-chev-right" /></a>
-                <a href="/contact"><Icon name="i-phone" />Contact Us<Icon name="i-chev-right" /></a>
-              </div>
-            </aside>
-          </div>
-
-          <p className="secure-note">
-            <Icon name="i-shield" />Never share your password with anyone.
-          </p>
-        </div>
-      </main>
-      </div>
-	  {showAlert && loginError && (
-	      <div className={`custom-alert custom-alert--${alertType}`} role="alert">
-
-	          <div className="custom-alert__icon">
-	              <Icon name={alertType === 'success' ? 'i-check-circle' : 'i-alert'} />
-	          </div>
-
-	          <div className="custom-alert__content">
-	              <strong>
-	                  {alertType === 'success' ? 'Success!' : 'Login Failed!'}
-	              </strong>
-
-	              <span>{loginError}</span>
-	          </div>
-
-	          <button
-	              type="button"
-	              className="custom-alert__close"
-				  onClick={() => {
-				      setShowAlert(false);
-				      setLoginError('');
-				      setAlertType('');
-				  }}
-	              aria-label="Close alert"
-	          >
-	              <Icon name="i-x" />
-	          </button>
-
-	      </div>
-	  )}
-      <Footer />
-    </>
-  );
+            )}
+            <Footer />
+        </>
+    );
 }
 
 export default Login;
