@@ -214,6 +214,35 @@ html.seba-text-lg .seba-app{font-size:17px}
 
 /* change main to: */
 .seba-app main{background:var(--bg);padding:32px 0 56px}
+/* Header fade-in (runs once on page load) */
+@keyframes seba-fade-in{
+  from{opacity:0;transform:translateY(-8px)}
+  to{opacity:1;transform:none}
+}
+.seba-app .gov-strip,
+.seba-app .masthead,
+.seba-app .site-nav,
+.seba-app .news{
+  animation:seba-fade-in .6s ease-out backwards;
+}
+.seba-app .gov-strip{animation-delay:0s}
+.seba-app .masthead{animation-delay:.12s}
+.seba-app .site-nav{animation-delay:.24s}
+.seba-app .news{animation-delay:.36s}
+/* ===== Header replay: subtle, plays when you scroll back up to it ===== */
+/* ===== Header replay: light fade ===== */
+@keyframes seba-fade-in-b{
+  from{opacity:.5;transform:translateY(-2px)}
+  to{opacity:1;transform:none}
+}
+.seba-app.hdr-replay .gov-strip,
+.seba-app.hdr-replay .masthead,
+.seba-app.hdr-replay .news{
+  animation:seba-fade-in-b .4s ease-out backwards;
+}
+.seba-app.hdr-replay .gov-strip{animation-delay:0s}
+.seba-app.hdr-replay .masthead{animation-delay:.05s}
+.seba-app.hdr-replay .news{animation-delay:.1s}
 /* Responsive */
 @media (max-width:1024px){
   .seba-app .quick-grid{grid-template-columns:repeat(2,1fr)}
@@ -373,6 +402,27 @@ function GovStrip({ large, setLarge }) {
 }
 
 function Masthead() {
+	
+	// header: replay the fade-in each time it scrolls back into view
+	useEffect(() => {
+	    const root = document.querySelector('.seba-app');
+	    const target = document.querySelector('.seba-app .masthead');
+	    if (!root || !target || !('IntersectionObserver' in window)) return;
+	    let hasLeft = false;
+	    const io = new IntersectionObserver(
+	        ([entry]) => {
+	            if (entry.isIntersecting) {
+	                if (hasLeft) root.classList.add('hdr-replay');   // skip the very first load
+	            } else {
+	                hasLeft = true;
+	                root.classList.remove('hdr-replay');
+	            }
+	        },
+	        { threshold: 0.4 }
+	    );
+	    io.observe(target);
+	    return () => { io.disconnect(); root.classList.remove('hdr-replay'); };
+	}, []);
     return (
         <header className="masthead">
             <div className="container">

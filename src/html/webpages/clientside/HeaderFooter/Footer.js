@@ -111,7 +111,22 @@ html{scroll-behavior:smooth}
 .seba-app main{background:var(--bg);padding:32px 0 56px}
 /* Larger-text mode */
 html.seba-text-lg .seba-app{font-size:17px}
-
+/* ===== Footer animation: replays every time it scrolls into view ===== */
+.seba-app .site-footer.js-anim .container > div,
+.seba-app .site-footer.js-anim .footer-bottom{
+  opacity:0;
+  transform:translateY(14px);
+  transition:opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
+}
+.seba-app .site-footer.js-anim.is-in .container > div,
+.seba-app .site-footer.js-anim.is-in .footer-bottom{
+  opacity:1;
+  transform:none;
+}
+/* small stagger */
+.seba-app .site-footer.js-anim.is-in .container > div:nth-child(2){transition-delay:.1s}
+.seba-app .site-footer.js-anim.is-in .container > div:nth-child(3){transition-delay:.2s}
+.seba-app .site-footer.js-anim.is-in .footer-bottom{transition-delay:.3s}
 /* Responsive */
 @media (max-width:1024px){
   .seba-app .quick-grid{grid-template-columns:repeat(2,1fr)}
@@ -271,6 +286,8 @@ function GovStrip({ large, setLarge }) {
 }
 
 function Masthead() {
+	
+	
     return (
         <header className="masthead">
             <div className="container">
@@ -753,6 +770,19 @@ function ContactView() {
    FOOTER + BACK TO TOP
 =================================================================== */
 function Footer({ onApply }) {
+	
+	// footer: animate in every time it scrolls into view
+	useEffect(() => {
+	    const footer = document.querySelector('.seba-app .site-footer');
+	    if (!footer || !('IntersectionObserver' in window)) return;
+	    footer.classList.add('js-anim');
+	    const io = new IntersectionObserver(
+	        ([entry]) => footer.classList.toggle('is-in', entry.isIntersecting),
+	        { threshold: 0.15 }
+	    );
+	    io.observe(footer);
+	    return () => { io.disconnect(); footer.classList.remove('js-anim', 'is-in'); };
+	}, []);
     return (
         <footer className="site-footer">
             <div className="container">

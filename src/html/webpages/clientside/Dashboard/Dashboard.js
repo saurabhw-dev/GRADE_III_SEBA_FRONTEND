@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import Header from '../HeaderFooter/Header';
-import Footer from '../HeaderFooter/Footer';
+import Header from '../HeaderFooter/HeaderDashboard';
+import Footer from '../HeaderFooter/FooterDashboard';
 
 function Dashboard() {
 
@@ -31,7 +31,7 @@ function Dashboard() {
 
     return (
         <>
-            {/*<Header /> */}
+            <Header /> 
 
             <main className="dashboard-main">
                 <div className="dashboard-container">

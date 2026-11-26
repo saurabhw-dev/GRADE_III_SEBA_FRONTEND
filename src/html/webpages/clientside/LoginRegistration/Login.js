@@ -392,6 +392,24 @@ const LOGIN_CSS = `
 @media (prefers-reduced-motion: reduce) {
     .custom-alert::after { animation: none; }
 }
+/* ===== Login page: entry + exit ===== */
+@keyframes seba-login-in{
+  from{opacity:0;transform:translateY(10px) scale(.99)}
+  to{opacity:1;transform:none}
+}
+@keyframes seba-login-out{
+  from{opacity:1;transform:none}
+  to{opacity:0;transform:translateY(-8px) scale(.99)}
+}
+@keyframes seba-fade-soft{ from{opacity:0} to{opacity:1} }
+
+/* entry */
+.seba-app .login-card{animation:seba-login-in .5s cubic-bezier(.22,.61,.36,1) backwards}
+.seba-app .secure-note{animation:seba-fade-soft .5s ease-out .25s backwards}
+
+/* exit (added by JS after a successful login) */
+.seba-app .login-card.is-leaving{animation:seba-login-out .35s ease-in forwards}
+.seba-app .secure-note.is-leaving{animation:seba-login-out .35s ease-in forwards}
 
 `;
 
