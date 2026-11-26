@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Header from '../HeaderFooter/Header';   // adjust the path if your folders differ
 import Footer from '../HeaderFooter/Footer';
+import API_BASE_URL from '../../../../apiConfig';
 
 /* ===================================================================
    ICONS  (only the icons this page uses, drawn inline)
@@ -198,6 +199,199 @@ const LOGIN_CSS = `
 @media (max-width:480px){
   .seba-app .form-row{grid-template-columns:1fr;gap:12px}
 }
+
+
+/* Center Screen Designer Alert - CSS only fade in / fade out */
+.custom-alert {
+    --accent: #18743a;
+    --accent-soft: rgba(24, 116, 58, 0.14);
+    --duration: 4s; /* total time the alert stays on screen */
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 99999;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    width: calc(100% - 40px);
+    max-width: 400px;
+    padding: 18px 20px;
+    overflow: hidden;
+
+    background: rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 18px;
+    box-shadow:
+        0 20px 50px -12px rgba(0, 0, 0, 0.25),
+        0 2px 6px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+    opacity: 0;
+    animation: alertLife var(--duration) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Variants */
+.custom-alert--success {
+    --accent: #1f9d55;
+    --accent-soft: rgba(31, 157, 85, 0.16);
+}
+
+.custom-alert--error {
+    --accent: #e03a3a;
+    --accent-soft: rgba(224, 58, 58, 0.16);
+}
+
+/* Soft colored glow in the corner */
+.custom-alert::before {
+    content: "";
+    position: absolute;
+    top: -60px;
+    left: -60px;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, var(--accent-soft), transparent 70%);
+    pointer-events: none;
+}
+
+/* Auto-dismiss progress bar */
+.custom-alert::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    transform-origin: left;
+    animation: alertProgress var(--duration) linear forwards;
+}
+
+/* Icon badge */
+.custom-alert__icon {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #000));
+    border-radius: 50%;
+    box-shadow: 0 6px 16px -4px var(--accent);
+}
+
+.custom-alert__icon svg {
+    color: #fff;
+}
+
+.custom-alert__content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.custom-alert__content strong {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #111;
+}
+
+.custom-alert__content span {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #5b5b63;
+}
+
+/* Close button */
+.custom-alert__close {
+    position: relative;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    border-radius: 50%;
+    color: #6b6b73;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.custom-alert__close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #111;
+    transform: rotate(90deg);
+}
+
+/* Fade in -> stay -> fade out (all in one animation) */
+@keyframes alertLife {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -46%) scale(0.94);
+        filter: blur(4px);
+        visibility: visible;
+    }
+    8% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: blur(0);
+    }
+    90% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: blur(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -54%) scale(0.96);
+        filter: blur(4px);
+        visibility: hidden;
+    }
+}
+
+@keyframes alertProgress {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .custom-alert {
+        background: rgba(30, 30, 34, 0.85);
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow:
+            0 20px 50px -12px rgba(0, 0, 0, 0.7),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .custom-alert__content strong { color: #fff; }
+    .custom-alert__content span { color: #a8a8b0; }
+    .custom-alert__close { background: rgba(255, 255, 255, 0.08); color: #bbb; }
+    .custom-alert__close:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .custom-alert::after { animation: none; }
+}
+
 `;
 
 const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I look-alikes
@@ -221,6 +415,8 @@ function Login({ serverError = '', onLogin, action = '' }) {
   const [capsLock, setCapsLock] = useState(false);
   const [loading, setLoading] = useState(false);
   const [disableLogin, setDisableLogin] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [alertType, setAlertType] = useState('');
   const [refreshSpin, setRefreshSpin] = useState(false);
   const [captchaError, setCaptchaError] = useState('Please enter the captcha.');
   const [errors, setErrors] = useState({ applicationNo: false, password: false, captcha: false });
@@ -316,45 +512,122 @@ function Login({ serverError = '', onLogin, action = '' }) {
     if (e.getModifierState) setCapsLock(e.getModifierState('CapsLock'));
   };
 
-  const handleSubmit = (e) => {
-    const bad = {
-      applicationNo: applicationNo.trim() === '',
-      password: password.trim() === '',
-      captcha: captcha.trim() === '',
-    };
-    setCaptchaError('Please enter the captcha.');
-    setErrors(bad);
 
-    // a) empty-field check
-    if (bad.applicationNo || bad.password || bad.captcha) {
+  const handleSubmit = async (e) => {
+	 console.log("login called");
       e.preventDefault();
-      if (bad.applicationNo && appNoRef.current) appNoRef.current.focus();
-      else if (bad.password && passwordRef.current) passwordRef.current.focus();
-      else if (captchaInputRef.current) captchaInputRef.current.focus();
-      return;
-    }
 
-    // b) PROTOTYPE ONLY – captcha match check. Remove once the server verifies the captcha.
-    if (captcha.trim().toUpperCase() !== captchaCodeRef.current) {
-      e.preventDefault();
-      setCaptchaError('Captcha does not match. Please try the new one.');
-      setErrors((p) => ({ ...p, captcha: true }));
-      drawCaptcha();
-      setCaptcha('');
-      if (captchaInputRef.current) captchaInputRef.current.focus();
-      return;
-    }
+      const bad = {
+          applicationNo: applicationNo.trim() === '',
+          password: password.trim() === '',
+          captcha: captcha.trim() === ''
+      };
 
-    // c) valid
-    if (onLogin) {
-      e.preventDefault();
-      onLogin({ applicationNo: applicationNo.trim(), password, captcha: captcha.trim() });
-      return;
-    }
-    // no onLogin: let the browser POST the form normally; show busy state
-    setLoading(true);
-    window.setTimeout(() => setDisableLogin(true), 0);
+      setCaptchaError('Please enter the captcha.');
+      setErrors(bad);
+
+      // 1. Empty-field validation
+      if (bad.applicationNo || bad.password || bad.captcha) {
+
+          if (bad.applicationNo && appNoRef.current)
+              appNoRef.current.focus();
+
+          else if (bad.password && passwordRef.current)
+              passwordRef.current.focus();
+
+          else if (captchaInputRef.current)
+              captchaInputRef.current.focus();
+
+          return;
+      }
+
+      // 2. Captcha validation (prototype only)
+      if (captcha.trim().toUpperCase() !== captchaCodeRef.current) {
+
+          setCaptchaError('Captcha does not match. Please try the new one.');
+
+          setErrors((p) => ({
+              ...p,
+              captcha: true
+          }));
+
+          drawCaptcha();
+          setCaptcha('');
+
+          if (captchaInputRef.current)
+              captchaInputRef.current.focus();
+
+          return;
+      }
+
+      // 3. Login API call
+      try {
+
+          setLoading(true);
+          setDisableLogin(true);
+          setLoginError('');
+
+          const response = await fetch(`${API_BASE_URL}/api/registrationlogin/checkLogin`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  applicationNo: applicationNo.trim(),
+                  password: password,
+                  captcha: captcha.trim()
+              })
+          });
+
+          const data = await response.json();
+
+		  if (response.ok && data.success) {
+
+		      setAlertType('success');
+		      setLoginError(data.message || 'Login successful!');
+			  setShowAlert(true);
+		      console.log('Login successful:', data);
+
+		  } else {
+
+		      setAlertType('error');
+		      setLoginError(data.message || 'Invalid Application No. / Mobile No. or Password.');
+			  setShowAlert(true);
+
+		  }
+
+		  } catch (error) {
+
+		      console.error('Login error:', error);
+		
+		      setAlertType('error');
+		      setLoginError('Unable to connect to server. Please try again.');
+			  setShowAlert(true);
+
+		  } finally {
+
+		      setLoading(false);
+		      setDisableLogin(false);
+
+		  }
+
   };
+  
+  const [showAlert, setShowAlert] = useState(false);
+  useEffect(() => {
+
+      if (showAlert) {
+
+          const timer = setTimeout(() => {
+              setShowAlert(false);
+              setLoginError('');
+              setAlertType('');
+          }, 1000);
+
+          return () => clearTimeout(timer);
+      }
+
+  }, [showAlert]);
 
   return (
     <>
@@ -397,31 +670,38 @@ function Login({ serverError = '', onLogin, action = '' }) {
                 <div className="form-row">
 
                   {/* ---------- Application No ---------- */}
-                  <div className={`field ${errors.applicationNo ? 'is-invalid' : ''}`}>
-                    <label htmlFor="applicationNo">Application no</label>
-                    <div className="field__control">
-                      <input
-                        ref={appNoRef}
-                        className="input"
-                        type="text"
-                        id="applicationNo"
-                        name="application_no"
-                        placeholder="APPLICATION NO"
-                        autoComplete="username"
-                        spellCheck={false}
-                        autoCapitalize="characters"
-                        required
-                        aria-describedby="appNoError"
-                        aria-invalid={errors.applicationNo}
-                        value={applicationNo}
-                        onChange={(e) => { setApplicationNo(e.target.value); clearError('applicationNo', e.target.value); }}
-                      />
-                      <Icon name="i-id" className="field__icon" />
-                    </div>
-                    <p className="field__error" id="appNoError">
-                      <Icon name="i-alert" /><span>Please enter your Application No.</span>
-                    </p>
-                  </div>
+				  <div className={`field ${errors.applicationNo ? 'is-invalid' : ''}`}>
+				      <label htmlFor="applicationNo">Application No. / Mobile No.</label>
+
+				      <div className="field__control">
+				          <input
+				              ref={appNoRef}
+				              className="input"
+				              type="text"
+				              id="applicationNo"
+				              name="application_no"
+				              placeholder="APPLICATION NO. / MOBILE NO."
+				              autoComplete="off"
+				              spellCheck={false}
+				              autoCapitalize="characters"
+				              required
+				              aria-describedby="appNoError"
+				              aria-invalid={!!errors.applicationNo}
+				              value={applicationNo}
+				              onChange={(e) => {
+				                  setApplicationNo(e.target.value);
+				                  clearError('applicationNo', e.target.value);
+				              }}
+				          />
+
+				          <Icon name="i-id" className="field__icon" />
+				      </div>
+
+				      <p className="field__error" id="appNoError">
+				          <Icon name="i-alert" />
+				          <span>Please enter your Application No. or Mobile No.</span>
+				      </p>
+				  </div>
 
                   {/* ---------- Password ---------- */}
                   <div className={`field field--password ${errors.password ? 'is-invalid' : ''}`}>
@@ -534,7 +814,7 @@ function Login({ serverError = '', onLogin, action = '' }) {
                 {/* ---------- Sign up ---------- */}
                 <div className="signup">
                   <p><strong>New candidate?</strong> Not registered yet? Sign up to apply.</p>
-                  <a className="btn btn--secondary btn--sm" href="/register">
+                  <a className="btn btn--secondary btn--sm" href="/slrc/register">
                     <Icon name="i-user-plus" />Sign Up
                   </a>
                 </div>
@@ -564,7 +844,36 @@ function Login({ serverError = '', onLogin, action = '' }) {
         </div>
       </main>
       </div>
+	  {showAlert && loginError && (
+	      <div className={`custom-alert custom-alert--${alertType}`} role="alert">
 
+	          <div className="custom-alert__icon">
+	              <Icon name={alertType === 'success' ? 'i-check-circle' : 'i-alert'} />
+	          </div>
+
+	          <div className="custom-alert__content">
+	              <strong>
+	                  {alertType === 'success' ? 'Success!' : 'Login Failed!'}
+	              </strong>
+
+	              <span>{loginError}</span>
+	          </div>
+
+	          <button
+	              type="button"
+	              className="custom-alert__close"
+				  onClick={() => {
+				      setShowAlert(false);
+				      setLoginError('');
+				      setAlertType('');
+				  }}
+	              aria-label="Close alert"
+	          >
+	              <Icon name="i-x" />
+	          </button>
+
+	      </div>
+	  )}
       <Footer />
     </>
   );
