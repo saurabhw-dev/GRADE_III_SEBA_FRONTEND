@@ -326,6 +326,47 @@ function Masthead({ candidate }) {
     const name = candidate.name || 'Candidate';
     const initial = name.trim().charAt(0).toUpperCase();
 
+	useEffect(() => {
+	    const root = document.querySelector('.slrc-app');
+	    if (!root) return;
+
+	    let lastScrollY = window.scrollY;
+	    let ticking = false;
+
+	    const handleScroll = () => {
+	        if (ticking) return;
+
+	        ticking = true;
+
+	        requestAnimationFrame(() => {
+	            const currentScrollY = window.scrollY;
+
+	            // Scrolling upward
+	            if (
+	                currentScrollY < lastScrollY &&
+	                currentScrollY > 100 &&
+	                !prefersReducedMotion()
+	            ) {
+	                root.classList.remove('hdr-replay');
+
+	                // Restart animation
+	                void root.offsetWidth;
+
+	                root.classList.add('hdr-replay');
+	            }
+
+	            lastScrollY = currentScrollY;
+	            ticking = false;
+	        });
+	    };
+
+	    window.addEventListener('scroll', handleScroll, { passive: true });
+
+	    return () => {
+	        window.removeEventListener('scroll', handleScroll);
+	        root.classList.remove('hdr-replay');
+	    };
+	}, []);
     return (
         <header className="masthead">
             <div className="container">
@@ -541,6 +582,8 @@ export default function SlrcDashboardHeader({
         const current = NAV_ITEMS.find((n) => n.key === active);
         document.title = `${current ? current.label : 'Dashboard'} – SLRC Class III Posts`;
     }, [active]);
+	
+	
 
     const handleLogout = onLogout || (() => { window.location.href = LOGOUT_URL; });
 

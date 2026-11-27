@@ -1,15 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import Header from '../HeaderFooter/HeaderDashboard';
-import Footer from '../HeaderFooter/FooterDashboard';
+import Footer from '../HeaderFooter/Footer';
+import Instructions from './Instructions';
+import Application from './Application';
 
 function Dashboard() {
-
     const navigate = useNavigate();
+    const [showApplication, setShowApplication] = useState(false);
 
     useEffect(() => {
-
         const token = sessionStorage.getItem("token");
 
         if (!token) {
@@ -21,25 +21,33 @@ function Dashboard() {
                 }
             });
         }
-
     }, [navigate]);
 
-    // Prevent dashboard from rendering without token
     if (!sessionStorage.getItem("token")) {
         return null;
     }
 
     return (
         <>
-            <Header /> 
+            <Header />
 
             <main className="dashboard-main">
                 <div className="dashboard-container">
-                    <h1>Candidate Dashboard</h1>
+
+                    {!showApplication ? (
+                        <>
+                            <Instructions
+                                onStart={() => setShowApplication(true)}
+                            />
+                        </>
+                    ) : (
+                        <Application />
+                    )}
+
                 </div>
             </main>
 
-            {/*<Footer /> */}
+             <Footer /> 
         </>
     );
 }

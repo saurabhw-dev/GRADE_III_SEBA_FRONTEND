@@ -712,7 +712,7 @@ function Login({ serverError = '', onLogin, action = '' }) {
 
                                         {/* ---------- Application No ---------- */}
                                         <div className={`field ${errors.applicationNo ? 'is-invalid' : ''}`}>
-                                            <label htmlFor="applicationNo">Application No. / Mobile No.</label>
+                                            <label htmlFor="applicationNo">Mobile No.</label>
 
                                             <div className="field__control">
                                                 <input
@@ -721,7 +721,7 @@ function Login({ serverError = '', onLogin, action = '' }) {
                                                     type="text"
                                                     id="applicationNo"
                                                     name="application_no"
-                                                    placeholder="APPLICATION NO. / MOBILE NO."
+                                                    placeholder="MOBILE NO."
                                                     autoComplete="off"
                                                     spellCheck={false}
                                                     autoCapitalize="characters"
@@ -759,7 +759,7 @@ function Login({ serverError = '', onLogin, action = '' }) {
                                                     id="password"
                                                     name="password"
                                                     placeholder="PASSWORD"
-                                                    autoComplete="current-password"
+                                                    autoComplete="off"
                                                     required
                                                     aria-describedby="pwError capsWarn"
                                                     aria-invalid={errors.password}
@@ -866,7 +866,7 @@ function Login({ serverError = '', onLogin, action = '' }) {
                             <aside className="login-aside" aria-label="How to log in">
                                 <h2>How to log in</h2>
                                 <ol>
-                                    <li>Enter your Application No</li>
+                                    <li>Enter your Mobile No</li>
                                     <li>Enter your Password and the captcha</li>
                                     <li>Click Login to continue</li>
                                 </ol>
