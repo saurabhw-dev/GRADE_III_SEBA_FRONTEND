@@ -67,7 +67,7 @@ function Application() {
 
     const steps = [
         { number: 1, title: 'Personal Information', subtitle: 'Candidate details' },
-        { number: 2, title: 'Examination & Qualification', subtitle: 'Exam details' },
+        { number: 2, title: 'Post & Education Qualification', subtitle: 'Exam details' },
         { number: 3, title: 'Upload & Declaration', subtitle: 'Final submission' }
     ];
 
@@ -1982,7 +1982,7 @@ function Application() {
 
                 )}
 
-                {/* STEP 2: EXAMINATION & QUALIFICATION */}
+                {/* STEP 2: Post & Education Qualification */}
 
                 {currentStep === 2 && (
                     <section className="reg-step">
